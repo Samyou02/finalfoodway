@@ -11,6 +11,7 @@ import itemRouter from "./routes/item.routes.js"
 import shopRouter from "./routes/shop.routes.js"
 import orderRouter from "./routes/order.routes.js"
 import categoryRouter from "./routes/category.routes.js"
+import ratingRouter from "./routes/rating.routes.js"
 import http from "http"
 import { Server } from "socket.io"
 import { socketHandler } from "./socket.js"
@@ -20,7 +21,7 @@ import { autoRegenerateOtps } from "./controllers/order.controllers.js"
 const app=express()
 const server=http.createServer(app)
 
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"]
+const allowedOrigins = ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"]
 const io=new Server(server,{
    cors:{
     origin: allowedOrigins,
@@ -58,6 +59,7 @@ app.use("/api/shop",shopRouter)
 app.use("/api/item",itemRouter)
 app.use("/api/order",orderRouter)
 app.use("/api/categories",categoryRouter)
+app.use("/api/rating",ratingRouter)
 
 socketHandler(io)
 

@@ -22,6 +22,7 @@ function DeliveryBoy() {
 const [loading,setLoading]=useState(false)
 const [message,setMessage]=useState("")
   const [isActive,setIsActive]=useState(userData?.isActive || false)
+  const [ratingSummary,setRatingSummary]=useState({ average:0, count:0 })
   // Removed geolocation tracking since we're using text-based addresses
 
 
@@ -147,6 +148,15 @@ const [message,setMessage]=useState("")
  
 
   useEffect(()=>{
+    // Fetch rating summary for delivery boy
+    (async()=>{
+      try{
+        const res=await axios.get(`${serverUrl}/api/rating/delivery/my`,{withCredentials:true})
+        setRatingSummary(res.data?.summary || { average:0, count:0 })
+      }catch(err){
+        console.log('fetch delivery rating error',err)
+      }
+    })()
 getAssignments()
 getCurrentOrder()
 handleTodayDeliveries()
@@ -166,6 +176,19 @@ handleTodayDeliveries()
         {isActive ? 'Go Inactive' : 'Go Active'}
       </button>
     </div>
+
+    {/* Rating Summary */}
+<div className='w-[90%] grid grid-cols-1 md:grid-cols-3 gap-4'>
+  <div className='bg-white rounded-xl p-4 shadow border'>
+    <p className='text-sm text-gray-600 mb-1'>My Rating</p>
+    <div className='inline-flex items-center gap-2'>
+      <span className='inline-flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded bg-yellow-50 text-yellow-700 border border-yellow-200'>
+        ★ {Number(ratingSummary.average || 0).toFixed(1)}
+      </span>
+      <span className='text-xs text-gray-500'>({ratingSummary.count || 0} reviews)</span>
+    </div>
+  </div>
+</div>
     </div>
 
 <div className='bg-white rounded-2xl shadow-md p-5 w-[90%] mb-6 border border-orange-100'>

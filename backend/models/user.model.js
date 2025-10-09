@@ -59,10 +59,14 @@ const userSchema = new mongoose.Schema({
         type:Boolean,
         default:false
     },
-    isActive:{
-        type:Boolean,
-        default:false
-    },
+   isActive:{
+       type:Boolean,
+       default:false
+   },
+   rating:{
+    average:{type:Number,default:0},
+    count:{type:Number,default:0}
+   },
    location:{
 type:{type:String,enum:['Point'],default:'Point'},
 coordinates:{type:[Number],default:[0,0]}

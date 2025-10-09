@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout } from '../redux/userSlice';
+import { serverUrl } from '../App';
 
 const SuperAdminDashboard = () => {
     const navigate = useNavigate();
@@ -42,8 +43,8 @@ const SuperAdminDashboard = () => {
     const [userTypes, setUserTypes] = useState([]);
     const [newUserType, setNewUserType] = useState({ name: '', description: '', deliveryAllowed: false });
 
-    // Set axios defaults
-    axios.defaults.baseURL = 'http://localhost:8000';
+    // Set axios defaults aligned with serverUrl
+    axios.defaults.baseURL = serverUrl;
     axios.defaults.withCredentials = true;
 
     useEffect(() => {

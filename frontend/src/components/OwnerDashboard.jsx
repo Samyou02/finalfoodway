@@ -14,6 +14,20 @@ function OwnerDashboard() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [ratingSummary, setRatingSummary] = useState(null)
+
+  const fetchRatings = async () => {
+    try {
+      const res = await axios.get(`${serverUrl}/api/rating/shop/my`, { withCredentials: true })
+      setRatingSummary(res.data)
+    } catch (error) {
+      console.log('fetch owner ratings error', error)
+    }
+  }
+
+  React.useEffect(() => {
+    fetchRatings()
+  }, [])
 
   const handleShopStatusToggle = async () => {
     try {
@@ -58,6 +72,37 @@ function OwnerDashboard() {
       {myShopData &&
         <div className='w-full flex flex-col items-center gap-6 px-4 sm:px-6'>
           <h1 className='text-2xl sm:text-3xl text-gray-900 flex items-center gap-3 mt-8 text-center'><FaUtensils className='text-[#ff4d2d] w-14 h-14 ' />Welcome to {myShopData.name}</h1>
+
+          {/* Rating Summary */}
+          <div className='w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <div className='bg-white rounded-xl p-4 shadow border'>
+              <p className='text-sm text-gray-600'>Shop Rating</p>
+              {(() => {
+                const summary = ratingSummary?.summaries?.find(s => String(s.shopId) === String(myShopData?._id))
+                const avg = summary?.rating?.average ?? myShopData?.rating?.average ?? 0
+                const count = summary?.rating?.count ?? myShopData?.rating?.count ?? 0
+                return (
+                  <>
+                    <p className='text-2xl font-bold text-[#ff4d2d]'>{Number(avg).toFixed(1)}</p>
+                    <p className='text-xs text-gray-500'>from {count} reviews</p>
+                  </>
+                )
+              })()}
+            </div>
+            {ratingSummary?.summaries?.length > 0 && (
+              <div className='md:col-span-2 bg-white rounded-xl p-4 shadow border'>
+                <p className='text-sm font-semibold text-gray-800 mb-2'>Recent Reviews</p>
+                <div className='space-y-2 max-h-40 overflow-auto'>
+                  {ratingSummary.ratings.slice(0,5).map(r => (
+                    <div key={r._id} className='flex items-center justify-between text-sm'>
+                      <span className='text-gray-700'>★ {r.stars} - {new Date(r.createdAt).toLocaleDateString()}</span>
+                      <span className='text-gray-500'>{r.comment}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Shop Status Toggle */}
           <div className='bg-white shadow-lg rounded-xl p-4 border border-orange-100 w-full max-w-3xl'>

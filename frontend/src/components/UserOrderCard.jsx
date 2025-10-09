@@ -1,5 +1,5 @@
 import axios from 'axios'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { serverUrl } from '../App'
 import { useDispatch } from 'react-redux'
@@ -11,7 +11,7 @@ function UserOrderCard({ data }) {
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const { myOrders } = useSelector(state => state.user)
-    const [selectedRating, setSelectedRating] = useState({})//itemId:rating
+    const [entityRatings, setEntityRatings] = useState({}) // keys: `${shopOrderId}-shop`, `${shopOrderId}-deliveryBoy`, `${itemId}-item`
     const [isDeleting, setIsDeleting] = useState(false)
     const [isCancelling, setIsCancelling] = useState(false)
     const [isEditingInstructions, setIsEditingInstructions] = useState(false)
@@ -29,14 +29,51 @@ function UserOrderCard({ data }) {
 
     }
 
-    const handleRating = async (itemId, rating) => {
+    // Load any existing ratings for this order (persist star colors)
+    useEffect(() => {
+        const fetchExistingRatings = async () => {
+            try {
+                const res = await axios.get(`${serverUrl}/api/rating/order/${data._id}`, { withCredentials: true })
+                if (res.data?.map) {
+                    setEntityRatings(res.data.map)
+                }
+            } catch (e) {
+                // non-blocking
+                console.log('load order ratings error', e?.response?.data || e)
+            }
+        }
+        if (data?.shopOrders?.length) fetchExistingRatings()
+    }, [data?._id])
+
+    const handleItemRating = async (shopOrder, itemId, stars) => {
         try {
-            const result = await axios.post(`${serverUrl}/api/item/rating`, { itemId, rating }, { withCredentials: true })
-            setSelectedRating(prev => ({
-                ...prev, [itemId]: rating
-            }))
+            await axios.post(`${serverUrl}/api/rating/submit`, {
+                orderId: data._id,
+                shopOrderId: shopOrder._id,
+                type: 'item',
+                targetId: itemId,
+                stars
+            }, { withCredentials: true })
+            setEntityRatings(prev => ({ ...prev, [`${itemId}-item`]: stars }))
         } catch (error) {
-            console.log(error)
+            console.log('submit item rating error', error?.response?.data || error)
+        }
+    }
+
+    const handleEntityRating = async (shopOrder, type, stars) => {
+        try {
+            const targetId = type === 'shop' ? shopOrder.shop._id : shopOrder.assignedDeliveryBoy?._id
+            if (!targetId) return
+            await axios.post(`${serverUrl}/api/rating/submit`, {
+                orderId: data._id,
+                shopOrderId: shopOrder._id,
+                type,
+                targetId,
+                stars
+            }, { withCredentials: true })
+            setEntityRatings(prev => ({ ...prev, [`${shopOrder._id}-${type}`]: stars }))
+        } catch (error) {
+            console.log('submit rating error', error?.response?.data || error)
         }
     }
 
@@ -176,11 +213,17 @@ function UserOrderCard({ data }) {
                                 <p className='text-sm font-semibold mt-1'>{item.name}</p>
                                 <p className='text-xs text-gray-500'>Qty: {item.quantity} x ₹{item.price}</p>
 
-                                {shopOrder.status == "delivered" && <div className='flex space-x-1 mt-2'>
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <button className={`text-lg ${selectedRating[item.item._id] >= star ? 'text-yellow-400' : 'text-gray-400'}`} onClick={() => handleRating(item.item._id,star)}>★</button>
-                                    ))}
-                                </div>}
+                                {shopOrder.status == "delivered" && (
+                                    <div className='flex space-x-1 mt-2'>
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                className={`text-lg ${ (entityRatings[`${item.item._id}-item`] || 0) >= star ? 'text-yellow-400' : 'text-gray-400'}`}
+                                                onClick={() => handleItemRating(shopOrder, item.item._id, star)}
+                                            >★</button>
+                                        ))}
+                                    </div>
+                                )}
 
 
 
@@ -193,6 +236,37 @@ function UserOrderCard({ data }) {
                             {data.isCancelled ? 'cancelled' : shopOrder.status}
                         </span>
                     </div>
+
+                    {/* Rate Delivery Boy and Shop after delivery */}
+                    {shopOrder.status === 'delivered' && (
+                        <div className='mt-3 grid grid-cols-1 md:grid-cols-2 gap-3'>
+                            <div className='p-3 bg-gradient-to-r from-green-50 to-emerald-50 border rounded-lg'>
+                                <p className='text-sm font-semibold text-emerald-800 mb-1'>Rate Delivery</p>
+                                <div className='flex space-x-1'>
+                                    {[1,2,3,4,5].map(star => (
+                                        <button
+                                            key={star}
+                                            className={`text-xl ${ (entityRatings[`${shopOrder._id}-deliveryBoy`] || 0) >= star ? 'text-yellow-400' : 'text-gray-300' } ${!shopOrder.assignedDeliveryBoy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            onClick={() => shopOrder.assignedDeliveryBoy && handleEntityRating(shopOrder, 'deliveryBoy', star)}
+                                            disabled={!shopOrder.assignedDeliveryBoy}
+                                        >★</button>
+                                    ))}
+                                </div>
+                                {!shopOrder.assignedDeliveryBoy && (
+                                    <p className='text-xs text-emerald-700 mt-1'>No delivery person assigned for this order.</p>
+                                )}
+                            </div>
+                            <div className='p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border rounded-lg'>
+                                <p className='text-sm font-semibold text-indigo-800 mb-1'>Rate Restaurant</p>
+                                <div className='flex space-x-1'>
+                                    {[1,2,3,4,5].map(star => (
+                                        <button key={star} className={`text-xl ${ (entityRatings[`${shopOrder._id}-shop`] || 0) >= star ? 'text-yellow-400' : 'text-gray-300' }`}
+                                            onClick={() => handleEntityRating(shopOrder, 'shop', star)}>★</button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     
                     {/* OTP for Out of Delivery Status */}
                     {shopOrder.status === "out of delivery" && shopOrder.deliveryOtp && (

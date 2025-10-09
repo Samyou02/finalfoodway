@@ -63,7 +63,13 @@ function OwnerItemCard({data}) {
       </div>
       <div className='flex flex-col justify-between p-3 flex-1'>
           <div>
-<h2 className='text-base font-semibold text-[#ff4d2d]'>{data.name}</h2>
+<h2 className='text-base font-semibold text-[#ff4d2d] flex items-center gap-2'>
+  {data.name}
+  <span className='inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-yellow-50 text-yellow-700 border border-yellow-200'>
+    ★ {Number(data?.rating?.average || 0).toFixed(1)}
+    <span className='text-[10px] text-gray-500 ml-1'>({data?.rating?.count || 0})</span>
+  </span>
+</h2>
 <p><span className='font-medium text-gray-70'>Category:</span> {data.category}</p>
 <p><span className='font-medium text-gray-70'>Food Type:</span> {data.foodType}</p>
 {/* Stock Status Display */}
