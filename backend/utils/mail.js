@@ -32,7 +32,13 @@ const safeSendMail = async (mailOptions) => {
     )
     return Promise.resolve()
   }
-  return transporter.sendMail(mailOptions)
+  try {
+    return await transporter.sendMail(mailOptions)
+  } catch (err) {
+    // Do not propagate mail errors; log and continue to avoid 500 responses
+    console.error(`[MAILER] sendMail failed: ${err?.message || err}`)
+    return Promise.resolve()
+  }
 }
 
 export const sendOtpMail = async (to, otp) => {

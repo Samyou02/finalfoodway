@@ -436,6 +436,26 @@ export const updateOrderStatus = async (req, res) => {
         }
 
 
+        // Auto-generate OTP when order goes out for delivery if none exists or expired
+        if (status === "out of delivery") {
+            const now = Date.now()
+            if (!shopOrder.deliveryOtp || !shopOrder.otpExpires || shopOrder.otpExpires <= now) {
+                const otp = Math.floor(1000 + Math.random() * 9000).toString()
+                shopOrder.deliveryOtp = otp
+                shopOrder.otpExpires = Date.now() + 2 * 60 * 60 * 1000 // 2 hours
+                shopOrder.lastOtpGeneratedAt = new Date()
+                // Populate user to get email for sending OTP
+                await order.populate("user", "fullName email socketId")
+                // Send OTP mail (safe and non-throwing)
+                try {
+                    await sendDeliveryOtpMail(order.user, otp)
+                } catch (e) {
+                    // sendDeliveryOtpMail already swallows errors, this is a safeguard
+                    console.error(`[MAILER] delivery OTP mail failed: ${e?.message || e}`)
+                }
+            }
+        }
+
         await order.save()
         const updatedShopOrder = order.shopOrders.find(o => o.shop == shopId)
         await order.populate("shopOrders.shop", "name")
@@ -450,7 +470,10 @@ export const updateOrderStatus = async (req, res) => {
                     orderId: order._id,
                     shopId: updatedShopOrder.shop._id,
                     status: updatedShopOrder.status,
-                    userId: order.user._id
+                    userId: order.user._id,
+                    // Include OTP info when available so the UI can show it automatically
+                    deliveryOtp: updatedShopOrder.deliveryOtp || null,
+                    otpExpires: updatedShopOrder.otpExpires || null
                 })
             }
         }
