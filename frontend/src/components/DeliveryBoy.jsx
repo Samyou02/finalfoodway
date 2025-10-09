@@ -23,6 +23,7 @@ const [loading,setLoading]=useState(false)
 const [message,setMessage]=useState("")
   const [isActive,setIsActive]=useState(userData?.isActive || false)
   const [ratingSummary,setRatingSummary]=useState({ average:0, count:0 })
+  const [deliveryRatings, setDeliveryRatings] = useState([])
   // Removed geolocation tracking since we're using text-based addresses
 
 
@@ -153,6 +154,7 @@ const [message,setMessage]=useState("")
       try{
         const res=await axios.get(`${serverUrl}/api/rating/delivery/my`,{withCredentials:true})
         setRatingSummary(res.data?.summary || { average:0, count:0 })
+        setDeliveryRatings(res.data?.ratings || [])
       }catch(err){
         console.log('fetch delivery rating error',err)
       }
@@ -187,6 +189,27 @@ handleTodayDeliveries()
       </span>
       <span className='text-xs text-gray-500'>({ratingSummary.count || 0} reviews)</span>
     </div>
+  </div>
+  {/* Ratings List */}
+  <div className='md:col-span-2 bg-white rounded-xl p-4 shadow border'>
+    <p className='text-sm font-semibold text-gray-700 mb-2'>Latest Reviews</p>
+    {deliveryRatings && deliveryRatings.length > 0 ? (
+      <div className='space-y-2'>
+        {deliveryRatings.slice(0,5).map((r, idx) => (
+          <div key={idx} className='flex items-start justify-between border rounded-lg p-2 bg-gray-50'>
+            <div>
+              <div className='inline-flex items-center gap-2'>
+                <span className='px-2 py-0.5 rounded bg-yellow-50 text-yellow-700 text-xs font-semibold'>★ {r.stars}</span>
+                {r.comment && <span className='text-xs text-gray-600'>{r.comment}</span>}
+              </div>
+              <p className='text-[11px] text-gray-500 mt-1'>Order: {String(r.order).slice(-6)} • {new Date(r.createdAt).toLocaleString()}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className='text-xs text-gray-500'>No reviews yet</p>
+    )}
   </div>
 </div>
     </div>

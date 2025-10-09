@@ -235,6 +235,15 @@ function UserOrderCard({ data }) {
                         </span>
                     </div>
 
+                    {/* Receipt Details for User */}
+                    {shopOrder?.receipt?.receiptNumber && (
+                        <div className='mt-3 p-3 border rounded-lg bg-green-50 text-sm'>
+                            <p className='font-semibold text-green-800'>Receipt Generated</p>
+                            <p className='text-green-700'>Number: {shopOrder.receipt.receiptNumber}</p>
+                            <p className='text-green-700'>Items: {shopOrder.receipt.items?.length || 0} | Subtotal: ₹{shopOrder.receipt.subtotal}</p>
+                        </div>
+                    )}
+
                     {/* Rate Delivery Boy and Shop after delivery */}
                     {shopOrder.status === 'delivered' && (
                         <div className='mt-3 grid grid-cols-1 md:grid-cols-2 gap-3'>

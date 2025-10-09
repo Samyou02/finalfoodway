@@ -87,6 +87,9 @@ function DeliveryBoyOrderCard({ data, onOrderUpdate }) {
                 <p className='text-sm text-orange-600'>
                     Owner: {data.shopOrders.owner.fullName} - {data.shopOrders.owner.mobile}
                 </p>
+                {data?.shopOrders?.receipt?.receiptNumber && (
+                    <p className='text-xs text-green-700 mt-1'>Receipt: {data.shopOrders.receipt.receiptNumber}</p>
+                )}
             </div>
 
             {/* Order Items */}
