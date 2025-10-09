@@ -25,6 +25,11 @@ function OwnerOrderCard({ data }) {
              dispatch(updateOrderStatus({orderId,shopId,status}))
              setAvailableBoys(result.data.availableBoys)
              console.log(result.data)
+             // If owner confirmed, refresh orders to fetch generated receipt
+             if(status === 'confirmed'){
+                const res = await axios.get(`${serverUrl}/api/order/my-orders`,{withCredentials:true})
+                dispatch(setMyOrders(res.data))
+             }
         } catch (error) {
             console.log(error)
         }
@@ -41,19 +46,17 @@ function OwnerOrderCard({ data }) {
     }
 
     const handleDeleteOrder = async () => {
-        if (!window.confirm('Are you sure you want to delete this order?')) {
+        if (!window.confirm('Remove this order from your dashboard?')) {
             return
         }
-        
         setIsDeleting(true)
         try {
-            await axios.delete(`${serverUrl}/api/order/delete-order/${data._id}`, { withCredentials: true })
-            // Remove the order from the local state
+            // Local-only removal from dashboard data
             const updatedOrders = myOrders.filter(order => order._id !== data._id)
             dispatch(setMyOrders(updatedOrders))
         } catch (error) {
-            console.error('Error deleting order:', error)
-            alert('Failed to delete order. Please try again.')
+            console.error('Error removing order locally:', error)
+            alert('Failed to update dashboard. Please try again.')
         } finally {
             setIsDeleting(false)
         }
@@ -122,12 +125,28 @@ function OwnerOrderCard({ data }) {
                 <span className='text-sm'>Status: <span className='font-semibold capitalize text-[#ff4d2d]'>
                     {data?.isCancelled ? 'cancelled' : (data?.shopOrders?.status || 'Unknown')}
                 </span></span>
-                {/* Allow status changes when status is undefined, pending, or preparing */}
-                {(!data?.isCancelled && (!data?.shopOrders?.status || data?.shopOrders?.status === "pending" || data?.shopOrders?.status === "preparing")) ? (
+                {/* Allow status changes unless status is out of delivery or rejected */}
+                {(!data?.isCancelled && (data?.shopOrders?.status !== "out of delivery" && data?.shopOrders?.status !== "rejected")) ? (
                     <select className='rounded-md border px-3 py-1 text-sm focus:outline-none focus:ring-2 border-[#ff4d2d] text-[#ff4d2d]' onChange={(e)=>handleUpdateStatus(data._id,data?.shopOrders?.shop?._id,e.target.value)}>
                         <option value="">Change Status</option>
-                        {(!data?.shopOrders?.status || data?.shopOrders?.status === "pending") && <option value="preparing">Preparing</option>}
-                        {(!data?.shopOrders?.status || data?.shopOrders?.status === "pending" || data?.shopOrders?.status === "preparing") && <option value="out of delivery">Out Of Delivery</option>}
+                        {/* From pending: can choose confirmed, rejected, preparing, out of delivery */}
+                        {(!data?.shopOrders?.status || data?.shopOrders?.status === "pending") && <>
+                          <option value="confirmed">Confirm</option>
+                          <option value="rejected">Reject</option>
+                          <option value="preparing">Preparing</option>
+                          <option value="out of delivery">Out Of Delivery</option>
+                        </>}
+                        {/* From confirmed: can switch to preparing, out of delivery, or reject */}
+                        {data?.shopOrders?.status === "confirmed" && <>
+                          <option value="preparing">Preparing</option>
+                          <option value="out of delivery">Out Of Delivery</option>
+                          <option value="rejected">Reject</option>
+                        </>}
+                        {/* From preparing: can switch to out of delivery or reject */}
+                        {data?.shopOrders?.status === "preparing" && <>
+                          <option value="out of delivery">Out Of Delivery</option>
+                          <option value="rejected">Reject</option>
+                        </>}
                     </select>
                 ) : (
                     <span className='text-xs text-gray-500 italic'>
@@ -137,6 +156,15 @@ function OwnerOrderCard({ data }) {
                     </span>
                 )}
             </div>
+
+            {/* Receipt Details for Owner */}
+            {data?.shopOrders?.receipt?.receiptNumber && (
+                <div className='mt-3 p-3 border rounded-lg bg-green-50 text-sm'>
+                    <p className='font-semibold text-green-800'>Receipt Generated</p>
+                    <p className='text-green-700'>Number: {data.shopOrders.receipt.receiptNumber}</p>
+                    <p className='text-green-700'>Items: {data.shopOrders.receipt.items?.length || 0} | Subtotal: ₹{data.shopOrders.receipt.subtotal}</p>
+                </div>
+            )}
 
             {data?.shopOrders?.status === "out of delivery" && 
                 <div className="mt-3 p-3 border rounded-lg text-sm bg-orange-50">

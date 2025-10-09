@@ -370,7 +370,25 @@ export const updateOrderStatus = async (req, res) => {
         if (!shopOrder) {
             return res.status(400).json({ message: "shop order not found" })
         }
+        const prevStatus = shopOrder.status
+        // Disallow changing status once it is out of delivery, rejected, delivered, or cancelled
+        const lockedStatuses = ["out of delivery", "rejected", "delivered", "cancelled"]
+        if (prevStatus && lockedStatuses.includes(prevStatus) && status !== prevStatus) {
+            return res.status(400).json({ message: `Status change not allowed from '${prevStatus}' to '${status}'` })
+        }
+
         shopOrder.status = status
+
+        // When owner confirms, generate a receipt for the shop order
+        if (status === "confirmed") {
+            const receiptNumber = `R-${order.orderId || 'NA'}-${String(shopOrder._id).slice(-6)}`
+            shopOrder.receipt = {
+                receiptNumber,
+                generatedAt: new Date(),
+                items: (shopOrder.shopOrderItems || []).map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
+                subtotal: shopOrder.subtotal || 0
+            }
+        }
         
         let deliveryBoysPayload = []
         if (status == "out of delivery" && !shopOrder.assignment) {
@@ -416,14 +434,18 @@ export const updateOrderStatus = async (req, res) => {
                 availableBoys.forEach(boy => {
                     const boySocketId = boy.socketId
                     if (boySocketId) {
+                        // Extract receipt number for this shop order (if generated on confirmation)
+                        const so = deliveryAssignment.order.shopOrders.find(so => so._id.equals(deliveryAssignment.shopOrderId))
+                        const receiptNumber = so?.receipt?.receiptNumber || null
                         io.to(boySocketId).emit('newAssignment', {
                             sentTo:boy._id,
                             assignmentId: deliveryAssignment._id,
                             orderId: deliveryAssignment.order._id,
                             shopName: deliveryAssignment.shop.name,
                             deliveryAddress: deliveryAssignment.order.deliveryAddress,
-                            items: deliveryAssignment.order.shopOrders.find(so => so._id.equals(deliveryAssignment.shopOrderId)).shopOrderItems || [],
-                            subtotal: deliveryAssignment.order.shopOrders.find(so => so._id.equals(deliveryAssignment.shopOrderId))?.subtotal
+                            items: so?.shopOrderItems || [],
+                            subtotal: so?.subtotal,
+                            receiptNumber
                         })
                     }
                 });
@@ -512,7 +534,8 @@ export const getDeliveryBoyAssignment = async (req, res) => {
             shopName: a.shop.name,
             deliveryAddress: a.order.deliveryAddress,
             items: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId)).shopOrderItems || [],
-            subtotal: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId))?.subtotal
+            subtotal: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId))?.subtotal,
+            receiptNumber: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId))?.receipt?.receiptNumber || null
         }))
 
         return res.status(200).json(formated)

@@ -221,6 +221,9 @@ availableAssignments.map((a,index)=>(
     <p className='text-sm font-semibold'>{a?.shopName}</p>
     <p className='text-sm text-gray-500'><span className='font-semibold'>Delivery Address:</span> {a?.deliveryAddress.text}</p>
 <p className='text-xs text-gray-400'>{a.items.length} items | {a.subtotal}</p>
+{a.receiptNumber && (
+  <p className='text-xs text-green-700 mt-1'>Receipt: {a.receiptNumber}</p>
+)}
    </div>
    <button className='bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600' onClick={()=>acceptOrder(a.assignmentId)}>Accept</button>
 

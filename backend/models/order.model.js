@@ -42,9 +42,15 @@ const shopOrderSchema = new mongoose.Schema({
     shopOrderItems: [shopOrderItemSchema],
     status:{
         type:String,
-        enum:["pending","preparing","out of delivery","delivered","cancelled"],
+        enum:["pending","confirmed","rejected","preparing","out of delivery","delivered","cancelled"],
         default:"pending"
     },
+  receipt: {
+    receiptNumber: { type: String, default: null },
+    generatedAt: { type: Date, default: null },
+    items: [{ name: String, price: Number, quantity: Number }],
+    subtotal: { type: Number, default: null }
+  },
   assignment:{
      type: mongoose.Schema.Types.ObjectId,
     ref: "DeliveryAssignment",

@@ -78,19 +78,17 @@ function UserOrderCard({ data }) {
     }
 
     const handleDeleteOrder = async () => {
-        if (!window.confirm('Are you sure you want to delete this order?')) {
+        if (!window.confirm('Remove this order from your dashboard?')) {
             return
         }
-        
         setIsDeleting(true)
         try {
-            await axios.delete(`${serverUrl}/api/order/delete-order/${data._id}`, { withCredentials: true })
-            // Remove the order from the local state
+            // Local-only removal from dashboard data
             const updatedOrders = myOrders.filter(order => order._id !== data._id)
             dispatch(setMyOrders(updatedOrders))
         } catch (error) {
-            console.error('Error deleting order:', error)
-            alert('Failed to delete order. Please try again.')
+            console.error('Error removing order locally:', error)
+            alert('Failed to update dashboard. Please try again.')
         } finally {
             setIsDeleting(false)
         }
