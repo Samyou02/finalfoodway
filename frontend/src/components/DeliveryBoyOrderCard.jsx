@@ -16,21 +16,15 @@ function DeliveryBoyOrderCard({ data, onOrderUpdate }) {
     const [message, setMessage] = useState("")
 
     const sendOtp = async () => {
-        setLoading(true)
-        try {
-            const result = await axios.post(`${serverUrl}/api/order/send-delivery-otp/${data._id}`, {}, { withCredentials: true })
-            setMessage(result.data.message)
-            setShowOtpBox(true)
-        } catch (error) {
-            setMessage(error.response?.data?.message || "Error sending OTP")
-        }
-        setLoading(false)
+        // Delivery boy should not generate OTP; only prompt for entry
+        setShowOtpBox(true)
+        setMessage('Ask customer to generate OTP from their app.')
     }
 
     const verifyOtp = async () => {
         setLoading(true)
         try {
-            const result = await axios.post(`${serverUrl}/api/order/verify-delivery-otp/${data._id}`, { otp }, { withCredentials: true })
+            const result = await axios.post(`${serverUrl}/api/order/verify-delivery-otp`, { orderId: data._id, shopOrderId: data.shopOrders._id, otp }, { withCredentials: true })
             setMessage(result.data.message)
             // Update the order status locally and notify parent component
             dispatch(updateOrderStatus({ orderId: data._id, status: 'delivered' }))
@@ -130,18 +124,6 @@ function DeliveryBoyOrderCard({ data, onOrderUpdate }) {
             {/* OTP Section for Out of Delivery Status */}
             {data.shopOrders.status === "out of delivery" && (
                 <div className='mt-4 p-4 border rounded-xl bg-blue-50'>
-                    {data.deliveryOtp && (
-                        <div className='mb-3 p-3 bg-white rounded-lg border-2 border-blue-300'>
-                            <p className='text-sm font-semibold text-blue-800 mb-1'>🔐 Delivery OTP</p>
-                            <p className='text-2xl font-bold text-blue-800 tracking-wider text-center'>{data.deliveryOtp}</p>
-                            {data.otpExpires && (
-                                <p className='text-xs text-blue-600 text-center mt-1'>
-                                    Expires: {new Date(data.otpExpires).toLocaleString()}
-                                </p>
-                            )}
-                        </div>
-                    )}
-
                     {!showOtpBox ? (
                         <button 
                             className='w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' 
@@ -163,7 +145,7 @@ function DeliveryBoyOrderCard({ data, onOrderUpdate }) {
                                 value={otp}
                             />
                             {message && (
-                                <p className='text-center text-green-600 text-sm font-medium'>{message}</p>
+                                <p className='text-center text-blue-700 text-sm font-medium'>{message}</p>
                             )}
                             <button 
                                 className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all" 

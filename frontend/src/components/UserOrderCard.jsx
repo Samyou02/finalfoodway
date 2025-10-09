@@ -5,6 +5,7 @@ import { serverUrl } from '../App'
 import { useDispatch } from 'react-redux'
 import { setMyOrders } from '../redux/userSlice'
 import { useSelector } from 'react-redux'
+import { ClipLoader } from 'react-spinners'
 
 function UserOrderCard({ data }) {
     const navigate = useNavigate()
@@ -15,6 +16,8 @@ function UserOrderCard({ data }) {
     const [isCancelling, setIsCancelling] = useState(false)
     const [isEditingInstructions, setIsEditingInstructions] = useState(false)
     const [specialInstructions, setSpecialInstructions] = useState(data.specialInstructions || '')
+    const [otpMessage, setOtpMessage] = useState("")
+    const [otpLoading, setOtpLoading] = useState(false)
 
     const formatDate = (dateString) => {
         const date = new Date(dateString)
@@ -115,6 +118,26 @@ function UserOrderCard({ data }) {
         }
     }
 
+    const handleGenerateOtp = async (shopOrderId) => {
+        setOtpMessage("")
+        setOtpLoading(true)
+        try {
+            const result = await axios.post(`${serverUrl}/api/order/send-delivery-otp`, {
+                orderId: data._id,
+                shopOrderId
+            }, { withCredentials: true })
+            if (result.data.isExisting) {
+                setOtpMessage('Existing OTP resent successfully.')
+            } else {
+                setOtpMessage('New OTP generated and sent successfully.')
+            }
+        } catch (error) {
+            setOtpMessage(error.response?.data?.message || 'Failed to generate OTP')
+        } finally {
+            setOtpLoading(false)
+        }
+    }
+
     const canEditInstructions = () => {
         return data.shopOrders.some(shopOrder => 
             shopOrder.status === 'pending' || shopOrder.status === 'preparing'
@@ -171,7 +194,7 @@ function UserOrderCard({ data }) {
                         </span>
                     </div>
                     
-                    {/* OTP Display for Out of Delivery Status */}
+                    {/* OTP for Out of Delivery Status */}
                     {shopOrder.status === "out of delivery" && shopOrder.deliveryOtp && (
                         <div className='mt-3 p-4 bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-orange-400 rounded-lg'>
                             <div className='flex items-center justify-between'>
@@ -190,6 +213,26 @@ function UserOrderCard({ data }) {
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    )}
+                    {shopOrder.status === "out of delivery" && !shopOrder.deliveryOtp && (
+                        <div className='mt-3 p-4 bg-orange-50 border-l-4 border-orange-400 rounded-lg'>
+                            <div className='flex items-center justify-between'>
+                                <div>
+                                    <h4 className='text-lg font-bold text-orange-800 mb-1'>Generate Delivery OTP</h4>
+                                    <p className='text-sm text-orange-600'>Tap to generate and share with delivery person</p>
+                                </div>
+                                <button 
+                                    className='bg-orange-500 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-600 disabled:opacity-50'
+                                    onClick={() => handleGenerateOtp(shopOrder._id)}
+                                    disabled={otpLoading}
+                                >
+                                    {otpLoading ? <ClipLoader size={20} color='white' /> : 'Generate OTP'}
+                                </button>
+                            </div>
+                            {otpMessage && (
+                                <p className='text-sm text-orange-700 mt-2'>{otpMessage}</p>
+                            )}
                         </div>
                     )}
                 </div>

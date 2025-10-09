@@ -1,8 +1,9 @@
 import React from 'react'
 import Nav from './Nav'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import axios from 'axios'
 import { serverUrl } from '../App'
+import { setUserData } from '../redux/userSlice'
 import { useEffect } from 'react'
 import { useState } from 'react'
 
@@ -11,6 +12,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 function DeliveryBoy() {
   const {userData,socket}=useSelector(state=>state.user)
+  const dispatch = useDispatch()
   const [currentOrder,setCurrentOrder]=useState()
   const [showOtpBox,setShowOtpBox]=useState(false)
   const [availableAssignments,setAvailableAssignments]=useState(null)
@@ -19,6 +21,7 @@ function DeliveryBoy() {
 
 const [loading,setLoading]=useState(false)
 const [message,setMessage]=useState("")
+  const [isActive,setIsActive]=useState(userData?.isActive || false)
   // Removed geolocation tracking since we're using text-based addresses
 
 
@@ -36,12 +39,34 @@ const [message,setMessage]=useState("")
     }
   }
 
+  const toggleActive = async () => {
+    try {
+      setLoading(true)
+      const newActive = !isActive
+      const result = await axios.put(`${serverUrl}/api/user/set-active`, { isActive: newActive }, { withCredentials: true })
+      setIsActive(newActive)
+      // Update userData in store minimally without changing other code
+      dispatch(setUserData({ ...userData, isActive: newActive }))
+      // Refresh assignments to reflect potential new broadcasts
+      await getAssignments()
+      setMessage(newActive ? 'You are now Active and will receive new orders' : 'You are now Inactive and won\'t receive orders')
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoading(false)
+    }
+  }
   const getCurrentOrder=async () => {
      try {
       const result=await axios.get(`${serverUrl}/api/order/get-current-order`,{withCredentials:true})
-    setCurrentOrder(result.data)
+      setCurrentOrder(result.data)
     } catch (error) {
-      console.log(error)
+      // Gracefully ignore 400 when no current assignment is found
+      if (error.response && error.response.status === 400) {
+        setCurrentOrder(null)
+      } else {
+        console.log(error)
+      }
     }
   }
 
@@ -73,33 +98,10 @@ const [message,setMessage]=useState("")
   },[socket])
   
   const sendOtp=async () => {
-    setLoading(true)
-    try {
-      const result=await axios.post(`${serverUrl}/api/order/send-delivery-otp`,{
-        orderId:currentOrder._id,shopOrderId:currentOrder.shopOrder._id
-      },{withCredentials:true})
-      setLoading(false)
-      setShowOtpBox(true)
-      
-      // Show appropriate message based on whether it's existing or new OTP
-      if (result.data.isExisting) {
-        setMessage(`Existing OTP resent to ${currentOrder.user.fullName}`)
-      } else {
-        setMessage(`New OTP sent to ${currentOrder.user.fullName}`)
-      }
-      
-      console.log(result.data)
-    } catch (error) {
-      console.log(error)
-      setLoading(false)
-      
-      // Handle specific error cases
-      if (error.response && error.response.status === 400) {
-        setMessage(error.response.data.message || "Unable to send OTP")
-      } else {
-        setMessage("Failed to send OTP. Please try again.")
-      }
-    }
+    // Delivery boy should not generate OTP; only prompt for entry
+    setShowOtpBox(true)
+    setLoading(false)
+    setMessage(`Ask customer ${currentOrder.user.fullName} to generate OTP from their app.`)
   }
    const verifyOtp=async () => {
     setMessage("")
@@ -156,6 +158,14 @@ handleTodayDeliveries()
     <div className='bg-white rounded-2xl shadow-md p-5 flex flex-col justify-start items-center w-[90%] border border-orange-100 text-center gap-2'>
 <h1 className='text-xl font-bold text-[#ff4d2d]'>Welcome, {userData.fullName}</h1>
 <p className='text-gray-600'>Ready to deliver orders in your area</p>
+    <div className='mt-3 flex items-center gap-3'>
+      <span className={`px-3 py-1 rounded-full text-sm ${isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+        {isActive ? 'Active' : 'Inactive'}
+      </span>
+      <button onClick={toggleActive} className={`px-4 py-2 rounded-lg text-white ${isActive ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-500 hover:bg-green-600'}`} disabled={loading}>
+        {isActive ? 'Go Inactive' : 'Go Active'}
+      </button>
+    </div>
     </div>
 
 <div className='bg-white rounded-2xl shadow-md p-5 w-[90%] mb-6 border border-orange-100'>

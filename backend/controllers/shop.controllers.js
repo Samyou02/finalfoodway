@@ -9,11 +9,13 @@ export const createEditShop=async (req,res) => {
         console.log(req.file)
         image=await uploadToCloudinary(req.file)
        } 
+       // Fallback: if Cloudinary isn't configured or upload failed, use a placeholder image
+       const placeholderImage = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop";
        let shop=await Shop.findOne({owner:req.userId})
        if(!shop){
-        // For new shop creation, image is required
+        // For new shop creation, ensure an image value exists
         if(!image){
-            return res.status(400).json({message:"Shop image is required"})
+            image = placeholderImage;
         }
         shop=await Shop.create({
         name,city,state,address,image,owner:req.userId

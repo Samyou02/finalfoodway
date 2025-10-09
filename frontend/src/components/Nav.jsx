@@ -18,15 +18,22 @@ function Nav() {
     const [query,setQuery]=useState("")
     const dispatch = useDispatch()
     const navigate=useNavigate()
-    const handleLogOut = async () => {
-        try {
+  const handleLogOut = async () => {
+    try {
+            // Ensure delivery boys go inactive on logout
+            try {
+                await axios.put(`${serverUrl}/api/user/set-active`, { isActive: false }, { withCredentials: true })
+            } catch (e) {
+                // Non-blocking: proceed to logout even if this fails
+                console.log('set-active on logout error:', e)
+            }
             const result = await axios.get(`${serverUrl}/api/auth/signout`, { withCredentials: true })
             dispatch(setUserData(null))
             // Note: OTP data is NOT cleared on logout - it persists for 2 hours regardless of login/logout
-        } catch (error) {
-            console.log(error)
-        }
+    } catch (error) {
+        console.log(error)
     }
+  }
 
     const handleSearchItems=async () => {
       try {

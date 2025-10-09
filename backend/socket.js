@@ -47,7 +47,8 @@ export const socketHandler = (io) => {
 
         await User.findOneAndUpdate({ socketId: socket.id }, {
           socketId: null,
-          isOnline: false
+          isOnline: false,
+          isActive: false
         })
       } catch (error) {
         console.log(error)
