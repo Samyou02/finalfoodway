@@ -12,11 +12,9 @@ function OwnerOrderCard({ data }) {
     const dispatch=useDispatch()
     const { myOrders } = useSelector(state => state.user)
     
-    // Debug logging
+    // Remove noisy debug logs
     useEffect(() => {
-        console.log('OwnerOrderCard - Received data:', data)
-        console.log('OwnerOrderCard - shopOrders:', data?.shopOrders)
-        console.log('OwnerOrderCard - shopOrderItems:', data?.shopOrders?.shopOrderItems)
+        // Intentionally silent
     }, [data])
     
     const handleUpdateStatus=async (orderId,shopId,status) => {
@@ -24,14 +22,13 @@ function OwnerOrderCard({ data }) {
             const result=await axios.post(`${serverUrl}/api/order/update-status/${orderId}/${shopId}`,{status},{withCredentials:true})
              dispatch(updateOrderStatus({orderId,shopId,status}))
              setAvailableBoys(result.data.availableBoys)
-             console.log(result.data)
-             // If owner confirmed, refresh orders to fetch generated receipt
-             if(status === 'confirmed'){
+             // Refresh orders when receipt can be generated on status changes
+             if(['confirmed','preparing','out of delivery'].includes(status)){
                 const res = await axios.get(`${serverUrl}/api/order/my-orders`,{withCredentials:true})
                 dispatch(setMyOrders(res.data))
              }
         } catch (error) {
-            console.log(error)
+            // Silently ignore to avoid console noise
         }
     }
 

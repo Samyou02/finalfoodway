@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,7 @@ function MyOrders() {
   const { userData, myOrders,socket} = useSelector(state => state.user)
   const navigate = useNavigate()
 const dispatch=useDispatch()
+  const [searchTerm, setSearchTerm] = useState('')
   
   // Fetch orders data
   useGetMyOrders()
@@ -47,7 +48,26 @@ const dispatch=useDispatch()
 
 
 
-  
+  // Filter orders for owners by customer name or receipt number
+  const filteredOrders = useMemo(() => {
+    if (!myOrders) return []
+    if (userData?.role !== 'owner') return myOrders
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return myOrders
+    return myOrders.filter((order) => {
+      const nameMatch = (order?.user?.fullName || '').toLowerCase().includes(term)
+      // Owner view may expose a single shopOrder under order.shopOrders
+      let receiptMatch = false
+      const so = order?.shopOrders
+      if (Array.isArray(so)) {
+        receiptMatch = so.some(s => (s?.receipt?.receiptNumber || '').toLowerCase().includes(term))
+      } else {
+        receiptMatch = ((so?.receipt?.receiptNumber || '').toLowerCase().includes(term))
+      }
+      return nameMatch || receiptMatch
+    })
+  }, [myOrders, searchTerm, userData?.role])
+
   return (
     <div className='w-full min-h-screen bg-[#fff9f6] flex justify-center px-4'>
       <div className='w-full max-w-[800px] p-4'>
@@ -58,9 +78,22 @@ const dispatch=useDispatch()
           </div>
           <h1 className='text-2xl font-bold  text-start'>My Orders</h1>
         </div>
+        {/* Owner search input */}
+        {userData?.role === 'owner' && (
+          <div className='mb-4'>
+            <input
+              type='text'
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder='Search by Customer Name or Receipt Number'
+              className='w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff4d2d]'
+            />
+          </div>
+        )}
+
         <div className='space-y-6'>
-          {myOrders && myOrders.length > 0 ? (
-            myOrders.map((order,index)=>(
+          {filteredOrders && filteredOrders.length > 0 ? (
+            filteredOrders.map((order,index)=>(
               <ErrorBoundary key={`error-boundary-${index}`}>
                 {userData.role=="user" ?
                   (
@@ -84,7 +117,7 @@ const dispatch=useDispatch()
               <div className='text-gray-500 text-lg mb-2'>No orders found</div>
               <div className='text-gray-400 text-sm'>
                 {userData.role === "user" && "You haven't placed any orders yet."}
-                {userData.role === "owner" && "No orders have been placed for your restaurant yet."}
+                {userData.role === "owner" && (searchTerm ? "No matching orders." : "No orders have been placed for your restaurant yet.")}
                 {userData.role === "deliveryBoy" && "No delivery orders have been assigned to you yet."}
               </div>
             </div>

@@ -2,6 +2,7 @@ import DeliveryAssignment from "../models/deliveryAssignment.model.js"
 import Order from "../models/order.model.js"
 import Shop from "../models/shop.model.js"
 import User from "../models/user.model.js"
+import mongoose from "mongoose"
 import { sendDeliveryOtpMail } from "../utils/mail.js"
 import RazorPay from "razorpay"
 import dotenv from "dotenv"
@@ -379,14 +380,35 @@ export const updateOrderStatus = async (req, res) => {
 
         shopOrder.status = status
 
-        // When owner confirms, generate a receipt for the shop order
-        if (status === "confirmed") {
+        // Ensure sequential orderId is generated when status changes to key states
+        const triggerStatuses = ["confirmed", "preparing", "out of delivery"]
+        if (!order.orderId && triggerStatuses.includes(status)) {
+            try {
+                // Use the Counter model registered in mongoose to generate next sequence
+                const Counter = mongoose.model('Counter')
+                const counter = await Counter.findByIdAndUpdate(
+                    'orderId',
+                    { $inc: { seq: 1 } },
+                    { new: true, upsert: true }
+                )
+                order.orderId = counter.seq
+            } catch (e) {
+                // Fall back to a time-based ID if counter generation fails
+                order.orderId = Number(String(Date.now()).slice(-9))
+            }
+        }
+
+        // Generate a receipt when status becomes confirmed, preparing, or out of delivery
+        if (["confirmed", "preparing", "out of delivery"].includes(status)) {
+            // Avoid regenerating if already present
+            if (!shopOrder.receipt || !shopOrder.receipt.receiptNumber) {
             const receiptNumber = `R-${order.orderId || 'NA'}-${String(shopOrder._id).slice(-6)}`
             shopOrder.receipt = {
                 receiptNumber,
                 generatedAt: new Date(),
                 items: (shopOrder.shopOrderItems || []).map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
                 subtotal: shopOrder.subtotal || 0
+            }
             }
         }
         
