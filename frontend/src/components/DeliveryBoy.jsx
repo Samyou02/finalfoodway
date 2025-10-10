@@ -25,6 +25,9 @@ const [message,setMessage]=useState("")
   const [isActive,setIsActive]=useState(userData?.isActive || false)
   const [ratingSummary,setRatingSummary]=useState({ average:0, count:0 })
   const [deliveryRatings, setDeliveryRatings] = useState([])
+  // UPI support per current order (keyed by `${orderId}-${shopOrderId}`)
+  const [upiByKey, setUpiByKey] = useState({})
+  const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent)
   // Removed geolocation tracking since we're using text-based addresses
 
 
@@ -94,6 +97,49 @@ const [message,setMessage]=useState("")
       socket.off('assignmentTaken')
     }
   },[socket])
+
+  // When current orders change, fetch shop UPI details and build deep links per order
+  useEffect(() => {
+    const round2 = (n) => Math.round(n * 100) / 100
+    const buildLinks = async () => {
+      const next = {}
+      for (const co of currentOrders || []) {
+        try {
+          const key = `${co.orderId}-${co.shopOrder._id}`
+          const so = co.shopOrder
+          const subtotal = Number(so.subtotal || 0)
+          const ownerShare = round2(subtotal) // equals subtotal
+          const deliveryBoyShare = round2(Number(so.deliveryBoyShare || 0))
+          const superadminFee = round2(Number(so.superadminFee || 0))
+          const paymentFee = round2(Number(so.paymentFee || 0))
+          const grandTotal = round2(ownerShare + deliveryBoyShare + superadminFee + paymentFee)
+          const amount = grandTotal.toFixed(2)
+
+          const rawShop = so.shop
+          const shopId = typeof rawShop === 'string' ? rawShop : rawShop?._id
+          if (!shopId) continue
+          const res = await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`, { withCredentials: true })
+          const shop = res.data?.shop
+          const vpa = shop?.upiVpa || null
+          const pn = shop?.upiPayeeName || shop?.name || 'FoodWay'
+          if (vpa) {
+            const tn = `Delivery Order`
+            const link = `upi://pay?pa=${encodeURIComponent(vpa)}&pn=${encodeURIComponent(pn)}&tn=${encodeURIComponent(tn)}&am=${amount}&cu=INR`
+            next[key] = { amount, vpa, pn, link }
+          }
+        } catch (err) {
+          // Non-blocking: continue building other links
+          console.log('build UPI link error', err)
+        }
+      }
+      setUpiByKey(next)
+    }
+    if (currentOrders && currentOrders.length > 0) {
+      buildLinks()
+    } else {
+      setUpiByKey({})
+    }
+  }, [currentOrders])
   
   const sendOtp=async () => {
     // Delivery boy should not generate OTP; only prompt for entry
@@ -271,6 +317,35 @@ availableAssignments.map((a,index)=>(
           <h3 className='font-semibold text-sm mb-2'>📍 Delivery Information</h3>
           <p className='text-sm text-gray-600 mb-1'><span className='font-medium'>Delivery Address:</span> {co.deliveryAddress.text}</p>
           <p className='text-sm text-gray-600'><span className='font-medium'>Customer:</span> {co.user.fullName}</p>
+        </div>
+
+        {/* UPI Payment for this shop/owner */}
+        <div className='mt-3 p-3 border rounded-xl bg-orange-50'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <p className='text-sm font-semibold text-orange-800'>Collect Payment via UPI</p>
+              <p className='text-xs text-orange-700'>Amount: ₹{upiByKey[key]?.amount || (co.shopOrder.subtotal)}</p>
+            </div>
+            {upiByKey[key]?.link ? (
+              isMobile ? (
+                <a href={upiByKey[key].link} target='_blank' rel='noopener noreferrer' className='bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-semibold'>Open UPI</a>
+              ) : (
+                <button onClick={() => navigator.clipboard && navigator.clipboard.writeText(upiByKey[key].link)} className='bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-semibold'>Copy Link</button>
+              )
+            ) : (
+              <span className='text-xs text-red-700'>UPI not configured by owner</span>
+            )}
+          </div>
+          {!isMobile && upiByKey[key]?.link && (
+            <div className='mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center'>
+              <div className='text-xs text-orange-800'>
+                <p>Scan this QR using any UPI app or paste the copied link.</p>
+              </div>
+              <div className='flex justify-end'>
+                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiByKey[key].link)}`} alt='UPI QR Code' className='border rounded-lg' />
+              </div>
+            </div>
+          )}
         </div>
 
         {!showOtpFor[key] ? (
