@@ -1,3 +1,4 @@
+import mongoose from "mongoose"
 import Rating from "../models/rating.model.js"
 import Order from "../models/order.model.js"
 import Shop from "../models/shop.model.js"
@@ -6,8 +7,10 @@ import Item from "../models/item.model.js"
 
 // Helper to update aggregate rating on target
 const updateAggregate = async (type, targetId) => {
+  // Ensure targetId type matches stored ObjectId in ratings collection
+  const targetObjectId = typeof targetId === 'string' ? new mongoose.Types.ObjectId(targetId) : targetId
   const pipeline = [
-    { $match: { type, target: targetId } },
+    { $match: { type, target: targetObjectId } },
     { $group: { _id: "$target", avg: { $avg: "$stars" }, count: { $sum: 1 } } }
   ]
   const res = await Rating.aggregate(pipeline)
@@ -92,7 +95,18 @@ export const getMyShopRatings = async (req, res) => {
     const shops = await Shop.find({ owner: ownerId })
     const shopIds = shops.map(s => s._id)
     const ratings = await Rating.find({ type: 'shop', target: { $in: shopIds } }).sort({ createdAt: -1 })
-    const summaries = shops.map(s => ({ shopId: s._id, name: s.name, rating: s.rating }))
+
+    // Compute accurate aggregates directly from ratings to avoid stale values
+    const agg = await Rating.aggregate([
+      { $match: { type: 'shop', target: { $in: shopIds } } },
+      { $group: { _id: "$target", avg: { $avg: "$stars" }, count: { $sum: 1 } } }
+    ])
+    const aggMap = new Map(agg.map(a => [String(a._id), { average: a.avg || 0, count: a.count || 0 }]))
+
+    const summaries = shops.map(s => {
+      const a = aggMap.get(String(s._id))
+      return { shopId: s._id, name: s.name, rating: a || s.rating || { average: 0, count: 0 } }
+    })
     return res.status(200).json({ summaries, ratings })
   } catch (error) {
     return res.status(500).json({ message: `get shop ratings error ${error}` })
