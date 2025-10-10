@@ -291,7 +291,7 @@ setRightButton(element.scrollLeft+element.clientWidth<element.scrollWidth)
       </div>
 
       <div className='w-full max-w-6xl flex flex-col gap-5 items-start p-[10px]'>
- <h1 className='text-gray-800 text-2xl sm:text-3xl'>Best Shop in {currentCity}</h1>
+ <h1 className='text-gray-800 text-2xl sm:text-3xl'>Best Shops</h1>
  <div className='w-full relative'>
           {showLeftShopButton &&  <button className='absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={()=>scrollHandler(shopScrollRef,"left")}><FaCircleChevronLeft />
           </button>}

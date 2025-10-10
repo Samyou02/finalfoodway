@@ -12,12 +12,11 @@ function useGetItemsByCity() {
     if(!currentCity || currentCity === null || currentCity === undefined) {
         return;
     }
-    try {
+  try {
            const result=await axios.get(`${serverUrl}/api/item/get-by-city/${currentCity}`,{withCredentials:true})
             dispatch(setItemsInMyCity(result.data))
-           console.log(result.data)
-    } catch (error) {
-        console.log(error)
+   } catch (error) {
+        // Silently fail to avoid console noise
     }
 }
 fetchItems()

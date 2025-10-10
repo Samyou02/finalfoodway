@@ -33,7 +33,7 @@ if(userData && navigator.geolocation) {
             updateLocation(pos.coords.latitude,pos.coords.longitude)
         }
     }, (error) => {
-        console.log('Geolocation error:', error)
+        // Suppress geolocation errors to keep console clean
     }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 })
 }
 
