@@ -93,14 +93,35 @@ export const placeOrder = async (req, res) => {
         }))
 
         if (paymentMethod == "online") {
-            if (!instance) {
-                return res.status(503).json({ message: "Online payments not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET." })
+            // If Razorpay is available, proceed with gateway order creation
+            if (instance) {
+                const razorOrder = await instance.orders.create({
+                    amount: Math.round(totalAmount * 100),
+                    currency: 'INR',
+                    receipt: `receipt_${Date.now()}`
+                })
+                const round2 = (n) => Math.round(n * 100) / 100
+                const newOrder = await Order.create({
+                    user: req.userId,
+                    paymentMethod,
+                    deliveryAddress: orderType === "delivery" ? deliveryAddress : null,
+                    orderType: orderType || "delivery",
+                    totalAmount,
+                    ownerShare: round2(totalAmount * 0.70),
+                    deliveryBoyShare: round2(totalAmount * 0.80),
+                    superadminFee: round2(totalAmount * 0.20),
+                    paymentFee: round2(totalAmount * 0.02),
+                    shopOrders,
+                    razorpayOrderId: razorOrder.id,
+                    payment: false
+                })
+
+                return res.status(200).json({
+                    razorOrder,
+                    orderId: newOrder._id,
+                })
             }
-            const razorOrder = await instance.orders.create({
-                amount: Math.round(totalAmount * 100),
-                currency: 'INR',
-                receipt: `receipt_${Date.now()}`
-            })
+            // Fallback: create order without Razorpay, mark payment pending
             const round2 = (n) => Math.round(n * 100) / 100
             const newOrder = await Order.create({
                 user: req.userId,
@@ -113,15 +134,35 @@ export const placeOrder = async (req, res) => {
                 superadminFee: round2(totalAmount * 0.20),
                 paymentFee: round2(totalAmount * 0.02),
                 shopOrders,
-                razorpayOrderId: razorOrder.id,
                 payment: false
             })
 
-            return res.status(200).json({
-                razorOrder,
-                orderId: newOrder._id,
-            })
+            await newOrder.populate("shopOrders.shopOrderItems.item", "name image price")
+            await newOrder.populate("shopOrders.shop", "name")
+            await newOrder.populate("shopOrders.owner", "name socketId")
+            await newOrder.populate("user", "name email mobile")
 
+            const io = req.app.get('io')
+            if (io) {
+                newOrder.shopOrders.forEach(shopOrder => {
+                    const ownerSocketId = shopOrder.owner.socketId
+                    if (ownerSocketId) {
+                        io.to(ownerSocketId).emit('newOrder', {
+                            _id: newOrder._id,
+                            paymentMethod: newOrder.paymentMethod,
+                            user: newOrder.user,
+                            shopOrders: shopOrder,
+                            createdAt: newOrder.createdAt,
+                            deliveryAddress: newOrder.deliveryAddress,
+                            payment: newOrder.payment,
+                            isCancelled: newOrder.isCancelled,
+                            cancellationReason: newOrder.cancellationReason
+                        })
+                    }
+                });
+            }
+
+            return res.status(201).json(newOrder)
         }
 
         const round2 = (n) => Math.round(n * 100) / 100

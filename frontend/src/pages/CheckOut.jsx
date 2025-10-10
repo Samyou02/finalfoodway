@@ -87,13 +87,37 @@ function CheckOut() {
       },{withCredentials:true})
 
       if(paymentMethod=="cod"){
-      dispatch(addMyOrder(result.data))
-      dispatch(clearCart())
-      navigate("/order-placed")
+        dispatch(addMyOrder(result.data))
+        dispatch(clearCart())
+        navigate("/order-placed")
       }else{
+        // Online payment: prefer direct UPI link without Razorpay
+        if (upiLink) {
+          try {
+            if (isMobile) {
+              // Trigger UPI intent on mobile
+              window.location.href = upiLink
+            } else if (navigator.clipboard) {
+              // Desktop browsers can't open UPI; copy link for user
+              await navigator.clipboard.writeText(upiLink)
+              alert('UPI link copied. Open your UPI app to pay.')
+            }
+          } catch (e) {
+            console.log('UPI open/copy error', e)
+          }
+        }
+
+        // If backend returned Razorpay order and keys are configured, keep gateway flow
         const orderId=result.data.orderId
         const razorOrder=result.data.razorOrder
+        if(orderId && razorOrder){
           openRazorpayWindow(orderId,razorOrder)
+        } else {
+          // Fallback: order created without Razorpay
+          dispatch(addMyOrder(result.data))
+          dispatch(clearCart())
+          navigate("/order-placed")
+        }
        }
     
     } catch (error) {
