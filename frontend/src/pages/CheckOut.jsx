@@ -26,6 +26,34 @@ function CheckOut() {
   const paymentFee = paymentMethod === "online" ? round2(totalAmount * 0.02) : 0
   const grandTotal = round2(ownerShare + deliveryBoyShare + superadminFee + paymentFee)
 
+  // Fetch shop UPI details (assumes single-shop cart; uses first item's shop)
+  const [shopUpi, setShopUpi] = useState({ vpa: null, payeeName: null })
+  useEffect(() => {
+    const fetchShopUpi = async () => {
+      try {
+        const firstItemShop = cartItems?.[0]?.shop
+        const shopId = typeof firstItemShop === 'string' ? firstItemShop : firstItemShop?._id
+        if (!shopId) return
+        const res = await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`, { withCredentials: true })
+        const shop = res.data?.shop
+        if (shop?.upiVpa) {
+          setShopUpi({ vpa: shop.upiVpa, payeeName: shop.upiPayeeName || null })
+        }
+      } catch (error) {
+        console.log('fetch shop UPI error', error)
+      }
+    }
+    fetchShopUpi()
+  }, [cartItems])
+
+  // UPI deep link with auto amount for online payments (from shop settings)
+  const upiAmount = grandTotal.toFixed(2)
+  const upiPa = shopUpi.vpa || null
+  const upiPn = shopUpi.payeeName || 'FoodWay'
+  const upiNote = `Order`
+  const upiLink = upiPa ? `upi://pay?pa=${encodeURIComponent(upiPa)}&pn=${encodeURIComponent(upiPn)}&tn=${encodeURIComponent(upiNote)}&am=${upiAmount}&cu=INR` : null
+  const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent)
+
   const handlePlaceOrder=async () => {
     // Validate required fields
     if (orderType === "delivery" && (!addressInput || addressInput.trim() === '')) {
@@ -232,6 +260,35 @@ const openRazorpayWindow=(orderId,razorOrder)=>{
               </div>
             </div>
           </div>
+          {paymentMethod === "online" && (
+            <div className='mt-3 p-3 border rounded-xl bg-blue-50'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm font-semibold text-blue-800'>Pay via UPI App</p>
+                  <p className='text-xs text-blue-700'>Amount: ₹{upiAmount}</p>
+                </div>
+                {upiLink ? (
+                  isMobile ? (
+                    <a href={upiLink} target='_blank' rel='noopener noreferrer' className='bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold'>Open UPI</a>
+                  ) : (
+                    <button onClick={() => navigator.clipboard && navigator.clipboard.writeText(upiLink)} className='bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold'>Copy UPI Link</button>
+                  )
+                ) : (
+                  <span className='text-xs text-red-700'>Owner has not configured UPI. Please use Card or COD.</span>
+                )}
+              </div>
+              {!isMobile && upiLink && (
+                <div className='mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center'>
+                  <div className='text-xs text-blue-800'>
+                    <p>Your browser can’t open UPI links. Scan this QR using any UPI app on your phone, or paste the copied link into your UPI app.</p>
+                  </div>
+                  <div className='flex justify-end'>
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`} alt='UPI QR Code' className='border rounded-lg' />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         <section>

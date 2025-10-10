@@ -3,7 +3,7 @@ import uploadToCloudinary from "../utils/s3Upload.js";
 
 export const createEditShop=async (req,res) => {
     try {
-       const {name,city,state,address}=req.body
+       const {name,city,state,address, upiVpa, upiPayeeName}=req.body
        let image;
        if(req.file){
         console.log(req.file)
@@ -18,11 +18,16 @@ export const createEditShop=async (req,res) => {
             image = placeholderImage;
         }
         shop=await Shop.create({
-        name,city,state,address,image,owner:req.userId
+        name,city,state,address,image,owner:req.userId,
+        upiVpa: upiVpa || null,
+        upiPayeeName: upiPayeeName || null
        })
        }else{
          // For shop update, only update image if new one is provided
-         const updateData = {name,city,state,address,owner:req.userId}
+         const updateData = {name,city,state,address,owner:req.userId,
+            upiVpa: upiVpa ?? undefined,
+            upiPayeeName: upiPayeeName ?? undefined
+         }
          if(image){
              updateData.image = image
          }

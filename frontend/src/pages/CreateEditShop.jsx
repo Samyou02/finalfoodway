@@ -20,6 +20,9 @@ function CreateEditShop() {
        const [frontendImage,setFrontendImage]=useState(myShopData?.image || null)
        const [backendImage,setBackendImage]=useState(null)
        const [loading,setLoading]=useState(false)
+       // UPI details
+       const [upiVpa, setUpiVpa] = useState(myShopData?.upiVpa || "")
+       const [upiPayeeName, setUpiPayeeName] = useState(myShopData?.upiPayeeName || "")
        const dispatch=useDispatch()
        const handleImage=(e)=>{
         const file=e.target.files[0]
@@ -39,6 +42,9 @@ function CreateEditShop() {
            if(backendImage){
             formData.append("image",backendImage)
            }
+           // Append UPI fields
+           if (upiVpa) formData.append("upiVpa", upiVpa)
+           if (upiPayeeName) formData.append("upiPayeeName", upiPayeeName)
            const result=await axios.post(`${serverUrl}/api/shop/create-edit`,formData,{withCredentials:true})
            dispatch(setMyShopData(result.data))
           setLoading(false)
@@ -78,6 +84,19 @@ function CreateEditShop() {
                             <img src={frontendImage} alt="" className='w-full h-48 object-cover rounded-lg border'/>
                         </div>}
                       
+                    </div>
+                    {/* UPI Payment Details */}
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                      <div>
+                        <label className='block text-sm font-medium text-gray-700 mb-1'>UPI ID (VPA)</label>
+                        <input type="text" placeholder='e.g. 9390146850@ybl' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' onChange={(e)=>setUpiVpa(e.target.value)} value={upiVpa} />
+                        <p className='text-xs text-gray-500 mt-1'>Used for customer UPI payments.</p>
+                      </div>
+                      <div>
+                        <label className='block text-sm font-medium text-gray-700 mb-1'>Payee Name</label>
+                        <input type="text" placeholder='e.g. Charn' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' onChange={(e)=>setUpiPayeeName(e.target.value)} value={upiPayeeName} />
+                        <p className='text-xs text-gray-500 mt-1'>Shown in UPI app for confirmation.</p>
+                      </div>
                     </div>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                         <div>

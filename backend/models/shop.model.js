@@ -26,6 +26,15 @@ const shopSchema=new mongoose.Schema({
         type:String,
         required:true
     },
+    // UPI payment details configured by owner
+    upiVpa:{
+        type:String,
+        default:null
+    },
+    upiPayeeName:{
+        type:String,
+        default:null
+    },
     items:[{
         type:mongoose.Schema.Types.ObjectId,
         ref:"Item"
