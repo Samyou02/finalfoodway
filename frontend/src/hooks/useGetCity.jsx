@@ -1,14 +1,13 @@
 import React, { useEffect } from 'react'
-import { serverUrl } from '../App'
 import { useDispatch, useSelector } from 'react-redux'
-import { setCurrentAddress, setCurrentCity, setCurrentState, setUserData } from '../redux/userSlice'
+import { setCurrentAddress, setCurrentCity, setCurrentState } from '../redux/userSlice'
 import { setAddress, setLocation } from '../redux/mapSlice'
 
 function useGetCity() {
     const dispatch = useDispatch()
     const { userData } = useSelector(state => state.user)
     const { currentCity } = useSelector(state => state.user)
-    const apiKey = import.meta.env.VITE_GEOAPIKEY
+    // No external API key needed; we use default city
     
     useEffect(() => {
         // Only get location if user is authenticated and we don't already have location data
@@ -25,7 +24,7 @@ function useGetCity() {
                 const longitude = position.coords.longitude
                 dispatch(setLocation({ lat: latitude, lon: longitude }))
                 // Do not reverse-geocode to avoid CORS/errors; keep default city
-            }, (error) => {
+            }, () => {
                 // Keep default location when geolocation fails (already set above)
             })
         } else if (userData === null) {

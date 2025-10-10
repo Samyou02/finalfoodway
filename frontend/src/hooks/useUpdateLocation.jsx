@@ -1,12 +1,9 @@
 import axios from 'axios'
 import React, { useEffect, useRef } from 'react'
 import { serverUrl } from '../App'
-import { useDispatch, useSelector } from 'react-redux'
-import {  setCurrentAddress, setCurrentCity, setCurrentState, setUserData } from '../redux/userSlice'
-import { setAddress, setLocation } from '../redux/mapSlice'
+import { useSelector } from 'react-redux'
 
 function useUpdateLocation() {
-    const dispatch=useDispatch()
     const {userData}=useSelector(state=>state.user)
     const lastSentRef = useRef(0)
     const watchIdRef = useRef(null)
@@ -32,7 +29,7 @@ if(userData && navigator.geolocation) {
             lastSentRef.current = now
             updateLocation(pos.coords.latitude,pos.coords.longitude)
         }
-    }, (error) => {
+    }, () => {
         // Suppress geolocation errors to keep console clean
     }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 })
 }

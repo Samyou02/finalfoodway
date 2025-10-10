@@ -1,29 +1,29 @@
 import axios from 'axios'
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { serverUrl } from '../App'
 import { useEffect } from 'react'
 import { useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
-import { useSelector } from 'react-redux'
+// react-redux not used on this page
 function TrackOrderPage() {
     const { orderId } = useParams()
     const [currentOrder, setCurrentOrder] = useState() 
     const navigate = useNavigate()
-    const {socket}=useSelector(state=>state.user)
+    // Socket is not used on this page; avoid unused variable
     
-    const handleGetOrder = async () => {
+    const handleGetOrder = useCallback(async () => {
         try {
             const result = await axios.get(`${serverUrl}/api/order/get-order-by-id/${orderId}`, { withCredentials: true })
             setCurrentOrder(result.data)
         } catch (error) {
             console.log(error)
         }
-    }
+    }, [orderId])
 
     useEffect(() => {
         handleGetOrder()
-    }, [orderId])
+    }, [handleGetOrder])
     return (
         <div className='max-w-4xl mx-auto p-4 flex flex-col gap-6'>
             <div className='relative flex items-center gap-4 top-[20px] left-[20px] z-[10] mb-[10px]' onClick={() => navigate("/")}>

@@ -1,10 +1,9 @@
 import React from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaUtensils } from "react-icons/fa";
 import { useState, useEffect } from 'react';
-import { useRef } from 'react';
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { setMyShopData } from '../redux/ownerSlice';
@@ -13,7 +12,6 @@ import { fetchCategories, categories } from '../category';
 
 function AddItem() {
     const navigate = useNavigate()
-    const { myShopData } = useSelector(state => state.owner)
     const [loading,setLoading]=useState(false)
     const [name, setName] = useState("")
     const [price, setPrice] = useState(0)
@@ -43,7 +41,7 @@ function AddItem() {
             }
         };
         loadCategories();
-    }, []);
+    }, [category]);
 
     const handleImage = (e) => {
         const file = e.target.files[0]

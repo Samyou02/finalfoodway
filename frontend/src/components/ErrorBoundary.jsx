@@ -6,7 +6,7 @@ class ErrorBoundary extends React.Component {
         this.state = { hasError: false, error: null, errorInfo: null };
     }
 
-    static getDerivedStateFromError(error) {
+    static getDerivedStateFromError() {
         // Update state so the next render will show the fallback UI
         return { hasError: true };
     }
@@ -33,7 +33,7 @@ class ErrorBoundary extends React.Component {
                     <p className='text-red-600 mb-4'>
                         An error occurred while rendering this component. Please try refreshing the page.
                     </p>
-                    {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+                    {import.meta.env?.MODE === 'development' && this.state.errorInfo && (
                         <details className='text-sm text-red-700 bg-red-100 p-3 rounded border'>
                             <summary className='cursor-pointer font-medium mb-2'>Error Details (Development Mode)</summary>
                             <div className='whitespace-pre-wrap'>

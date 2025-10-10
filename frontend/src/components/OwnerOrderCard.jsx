@@ -27,18 +27,8 @@ function OwnerOrderCard({ data }) {
                 const res = await axios.get(`${serverUrl}/api/order/my-orders`,{withCredentials:true})
                 dispatch(setMyOrders(res.data))
              }
-        } catch (error) {
+        } catch {
             // Silently ignore to avoid console noise
-        }
-    }
-
-    const handleAssignDeliveryBoy = async (orderId, deliveryBoyId) => {
-        try {
-            const result = await axios.post(`${serverUrl}/api/order/assign-delivery-boy`, { orderId, deliveryBoyId }, { withCredentials: true })
-            console.log(result)
-            dispatch(updateOrderStatus({ orderId, status: 'assigned' }))
-        } catch (error) {
-            console.log(error)
         }
     }
 

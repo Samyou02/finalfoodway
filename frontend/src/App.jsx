@@ -82,7 +82,7 @@ useUpdateLocation()
       socketInstance.disconnect()
       dispatch(setSocket(null))
     }
-  },[userData?._id])
+  },[userData?._id, dispatch])
 
   return (
    <Routes>

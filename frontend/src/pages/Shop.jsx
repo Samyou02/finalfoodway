@@ -1,5 +1,5 @@
 import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { serverUrl } from '../App'
 import { useNavigate, useParams } from 'react-router-dom'
 import { FaStore } from "react-icons/fa6";
@@ -17,7 +17,7 @@ function Shop() {
     const navigate=useNavigate()
     const { socket } = useSelector(state => state.user)
     
-    const handleShop=async () => {
+    const handleShop = useCallback(async () => {
         try {
            const result=await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`,{withCredentials:true}) 
            setShop(result.data.shop)
@@ -26,7 +26,7 @@ function Shop() {
         } catch (error) {
             console.log(error)
         }
-    }
+    }, [shopId])
 
     // Real-time shop status updates
     useEffect(() => {
@@ -51,11 +51,11 @@ function Shop() {
                 socket.off('shopStatusUpdate')
             }
         }
-    }, [socket, shopId])
+    }, [socket, shopId, handleShop])
 
-    useEffect(()=>{
+    useEffect(() => {
         handleShop()
-    },[shopId])
+    }, [handleShop])
   return (
     <div className='min-h-screen bg-gray-50'>
         <button className='absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/50 hover:bg-black/70 text-white px-3 py-2 rounded-full shadow-md transition' onClick={()=>navigate("/")}>

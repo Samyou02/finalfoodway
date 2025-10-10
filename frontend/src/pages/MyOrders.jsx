@@ -7,7 +7,7 @@ import OwnerOrderCard from '../components/OwnerOrderCard';
 import DeliveryBoyOrderCard from '../components/DeliveryBoyOrderCard';
 import ErrorBoundary from '../components/ErrorBoundary';
 import useGetMyOrders from '../hooks/useGetMyOrders';
-import { setMyOrders, updateOrderStatus, updateRealtimeOrderStatus } from '../redux/userSlice';
+import { setMyOrders, updateRealtimeOrderStatus } from '../redux/userSlice';
 import DeliveryRatingPopup from '../components/DeliveryRatingPopup';
 
 
@@ -44,7 +44,7 @@ const dispatch=useDispatch()
       socket?.off('newOrder')
       socket?.off('update-status')
     }
-  },[socket])
+  },[socket, dispatch, myOrders, userData?._id])
 
 
 

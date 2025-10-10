@@ -1,4 +1,4 @@
-import { createSlice, current } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
 // Helper functions for localStorage
 const saveCartToLocalStorage = (cartItems, totalAmount) => {
@@ -287,12 +287,12 @@ const userSlice = createSlice({
       state.searchItems = action.payload
     },
 
-    saveOtpData: (state, action) => {
+    saveOtpData: (_, action) => {
       const { orderId, shopOrderId, deliveryOtp, otpExpires } = action.payload;
       saveOtpDataToLocalStorage({ orderId, shopOrderId, deliveryOtp, otpExpires });
     },
 
-    clearPersistedOtpData: (state) => {
+    clearPersistedOtpData: () => {
       clearOtpDataFromLocalStorage();
     },
 

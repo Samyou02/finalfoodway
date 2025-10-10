@@ -43,7 +43,7 @@ function UserOrderCard({ data }) {
             }
         }
         if (data?.shopOrders?.length) fetchExistingRatings()
-    }, [data?._id])
+    }, [data?._id, data?.shopOrders?.length])
 
     const handleItemRating = async (shopOrder, itemId, stars) => {
         try {
@@ -129,7 +129,7 @@ function UserOrderCard({ data }) {
 
     const handleUpdateSpecialInstructions = async () => {
         try {
-            const response = await axios.put(`${serverUrl}/api/order/update-special-instructions/${data._id}`, 
+            await axios.put(`${serverUrl}/api/order/update-special-instructions/${data._id}`, 
                 { specialInstructions }, 
                 { withCredentials: true }
             )

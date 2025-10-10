@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { FaLocationDot } from "react-icons/fa6";
 import { IoIosSearch } from "react-icons/io";
 import { FiShoppingCart } from "react-icons/fi";
@@ -27,7 +27,7 @@ function Nav() {
                 // Non-blocking: proceed to logout even if this fails
                 console.log('set-active on logout error:', e)
             }
-            const result = await axios.get(`${serverUrl}/api/auth/signout`, { withCredentials: true })
+            await axios.get(`${serverUrl}/api/auth/signout`, { withCredentials: true })
             dispatch(setUserData(null))
             // Note: OTP data is NOT cleared on logout - it persists for 2 hours regardless of login/logout
     } catch (error) {
@@ -35,14 +35,14 @@ function Nav() {
     }
   }
 
-    const handleSearchItems=async () => {
+    const handleSearchItems = useCallback(async () => {
       try {
-        const result=await axios.get(`${serverUrl}/api/item/search-items?query=${query}&city=${currentCity}`,{withCredentials:true})
-    dispatch(setSearchItems(result.data))
+        const { data } = await axios.get(`${serverUrl}/api/item/search-items?query=${query}&city=${currentCity}`, { withCredentials: true })
+        dispatch(setSearchItems(data))
       } catch (error) {
         console.log(error)
       }
-    }
+    }, [query, currentCity, dispatch])
 
     useEffect(()=>{
         if(query){
@@ -50,8 +50,7 @@ handleSearchItems()
         }else{
               dispatch(setSearchItems(null))
         }
-
-    },[query])
+    },[query, dispatch, handleSearchItems])
     return (
         <div className='w-full h-[80px] flex items-center justify-between md:justify-center gap-[30px] px-[20px] fixed top-0 z-[9999] bg-[#fff9f6] overflow-visible'>
 

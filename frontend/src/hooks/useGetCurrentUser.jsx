@@ -1,12 +1,11 @@
 import axios from 'axios'
 import React, { useEffect } from 'react'
 import { serverUrl } from '../App'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { setUserData } from '../redux/userSlice'
 
 function useGetCurrentUser() {
     const dispatch = useDispatch()
-    const { userData } = useSelector(state => state.user)
     
     useEffect(() => {
         const fetchUser = async () => {
@@ -25,7 +24,7 @@ function useGetCurrentUser() {
                     // Other errors: avoid noisy logs; keep app stable
                     dispatch(setUserData(null))
                 }
-            } catch (error) {
+            } catch {
                 // Network or unexpected error; keep silent to avoid console noise
                 dispatch(setUserData(null))
             }

@@ -51,7 +51,7 @@ function DeliveryRatingPopup() {
           setCandidate(null)
           return
         }
-      } catch (e) {
+      } catch {
         // Non-blocking; continue with popup based on local storage
       }
 
@@ -82,7 +82,7 @@ function DeliveryRatingPopup() {
         targetId: candidate.deliveryBoyId,
         stars
       }, { withCredentials: true })
-    } catch (e) {
+    } catch {
       // Non-blocking; still hide popup
     } finally {
       const key = `deliveryRatingPrompt_${candidate.shopOrderId}`

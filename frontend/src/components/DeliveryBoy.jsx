@@ -21,7 +21,6 @@ function DeliveryBoy() {
   const [todayDeliveries,setTodayDeliveries]=useState({ totalDeliveries: 0, chartData: [], deliveries: [] })
 
 const [loading,setLoading]=useState(false)
-const [message,setMessage]=useState("")
   const [isActive,setIsActive]=useState(userData?.isActive || false)
   const [ratingSummary,setRatingSummary]=useState({ average:0, count:0 })
   const [deliveryRatings, setDeliveryRatings] = useState([])
@@ -49,13 +48,12 @@ const [message,setMessage]=useState("")
     try {
       setLoading(true)
       const newActive = !isActive
-      const result = await axios.put(`${serverUrl}/api/user/set-active`, { isActive: newActive }, { withCredentials: true })
+      await axios.put(`${serverUrl}/api/user/set-active`, { isActive: newActive }, { withCredentials: true })
       setIsActive(newActive)
       // Update userData in store minimally without changing other code
       dispatch(setUserData({ ...userData, isActive: newActive }))
       // Refresh assignments to reflect potential new broadcasts
       await getAssignments()
-      setMessage(newActive ? 'You are now Active and will receive new orders' : 'You are now Inactive and won\'t receive orders')
     } catch (error) {
       console.log(error)
     } finally {
@@ -63,9 +61,9 @@ const [message,setMessage]=useState("")
     }
   }
   const getCurrentOrders=async () => {
-     try {
-      const result=await axios.get(`${serverUrl}/api/order/get-current-orders`,{withCredentials:true})
-      setCurrentOrders(Array.isArray(result.data) ? result.data : [])
+    try {
+      const { data } = await axios.get(`${serverUrl}/api/order/get-current-orders`,{withCredentials:true})
+      setCurrentOrders(Array.isArray(data) ? data : [])
     } catch (error) {
       console.log(error)
     }
@@ -74,8 +72,7 @@ const [message,setMessage]=useState("")
 
   const acceptOrder=async (assignmentId) => {
     try {
-      const result=await axios.get(`${serverUrl}/api/order/accept-order/${assignmentId}`,{withCredentials:true})
-    console.log(result.data)
+      await axios.get(`${serverUrl}/api/order/accept-order/${assignmentId}`,{withCredentials:true})
     await getCurrentOrders()
     } catch (error) {
       console.log(error)
@@ -141,41 +138,8 @@ const [message,setMessage]=useState("")
     }
   }, [currentOrders])
   
-  const sendOtp=async () => {
-    // Delivery boy should not generate OTP; only prompt for entry
-    setShowOtpBox(true)
-    setLoading(false)
-    setMessage(`Ask customer ${currentOrder.user.fullName} to generate OTP from their app.`)
-  }
-   const verifyOtp=async () => {
-    setMessage("")
-    try {
-      const result=await axios.post(`${serverUrl}/api/order/verify-delivery-otp`,{
-        orderId:currentOrder._id,shopOrderId:currentOrder.shopOrder._id,otp
-      },{withCredentials:true})
-    console.log(result.data)
-    setMessage(result.data.message)
-    // Update state instead of refreshing the page
-    setCurrentOrder(null)
-    setOtp("")
-    setShowOtpBox(false)
-    // Refresh data to get updated assignments and today's deliveries
-    await getAssignments()
-    await handleTodayDeliveries()
-    } catch (error) {
-      // Only log unexpected errors
-      if (error.response && error.response.status !== 400) {
-        console.log('OTP verification error:', error)
-      }
-      
-      // Show appropriate error message based on status
-      if (error.response && error.response.status === 400) {
-        setMessage(error.response.data.message || "Invalid OTP. Please check and try again.")
-      } else {
-        setMessage("Failed to verify OTP. Please try again.")
-      }
-    }
-  }
+  // Delivery boy does not generate OTP; per-order UI handles OTP entry
+  // Legacy verifyOtp function removed in favor of per-order OTP handling
 
 
    const handleTodayDeliveries=async () => {
@@ -301,7 +265,7 @@ availableAssignments.map((a,index)=>(
 <div className='bg-white rounded-2xl p-5 shadow-md w-[90%] border border-orange-100'>
 <h2 className='text-lg font-bold mb-3'>📦 Current Orders</h2>
 {currentOrders && currentOrders.length > 0 ? (
-  currentOrders.map((co, idx) => {
+  currentOrders.map((co) => {
     const key = `${co.orderId}-${co.shopOrder._id}`
     return (
       <div key={key} className='border rounded-lg p-4 mb-4'>

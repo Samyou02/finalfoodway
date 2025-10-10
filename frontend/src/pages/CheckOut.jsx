@@ -8,10 +8,10 @@ import axios from 'axios';
 import { FaMobileScreenButton } from "react-icons/fa6";
 import { useNavigate } from 'react-router-dom';
 import { serverUrl } from '../App';
-import { addMyOrder, setTotalAmount, clearCart } from '../redux/userSlice';
+import { addMyOrder, clearCart } from '../redux/userSlice';
 
 function CheckOut() {
-  const { cartItems ,totalAmount,userData} = useSelector(state => state.user)
+  const { cartItems ,totalAmount} = useSelector(state => state.user)
   const [addressInput, setAddressInput] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("cod")

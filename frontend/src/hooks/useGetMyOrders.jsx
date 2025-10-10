@@ -2,8 +2,7 @@ import axios from 'axios'
 import React, { useEffect, useRef } from 'react'
 import { serverUrl } from '../App'
 import { useDispatch, useSelector } from 'react-redux'
-import { setMyOrders, setUserData } from '../redux/userSlice'
-import { setMyShopData } from '../redux/ownerSlice'
+import { setMyOrders } from '../redux/userSlice'
 
 function useGetMyOrders() {
     const dispatch = useDispatch()
@@ -32,7 +31,7 @@ function useGetMyOrders() {
                     dispatch(setMyOrders(result.data))
                     lastFetchedUserId.current = userData._id
                 }
-            } catch (error) {
+            } catch {
                 if (!isCancelled) {
                     // Always set empty orders silently on error to avoid console noise
                     dispatch(setMyOrders([]))

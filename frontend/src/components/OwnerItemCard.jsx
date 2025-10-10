@@ -24,7 +24,7 @@ function OwnerItemCard({data}) {
     const handleStockStatusChange = async (newStatus) => {
       try {
         setIsUpdatingStock(true)
-        const result = await axios.put(`${serverUrl}/api/item/update-stock/${data._id}`, 
+        await axios.put(`${serverUrl}/api/item/update-stock/${data._id}`, 
           { stockStatus: newStatus }, 
           { withCredentials: true }
         )

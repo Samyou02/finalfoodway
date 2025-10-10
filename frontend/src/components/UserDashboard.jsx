@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Nav from './Nav.jsx'
 import { fetchCategories } from '../category'
 import CategoryCard from './CategoryCard'
 import { FaCircleChevronLeft } from "react-icons/fa6";
 import { FaCircleChevronRight } from "react-icons/fa6";
-import { FaFilter, FaSort } from "react-icons/fa";
+import { FaFilter } from "react-icons/fa";
 import { useSelector, useDispatch } from 'react-redux';
 import FoodCard from './FoodCard';
 import { useNavigate } from 'react-router-dom';
@@ -29,13 +29,10 @@ function UserDashboard() {
   const [sortBy, setSortBy] = useState('')
   const [filterCategory, setFilterCategory] = useState('All')
   const [filterFoodType, setFilterFoodType] = useState('All')
-  const [filterPrepTime, setFilterPrepTime] = useState('All')
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' })
-  const [excludeOutOfStock, setExcludeOutOfStock] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
 // Function to fetch all items
-const fetchItems = async () => {
+const fetchItems = useCallback(async () => {
   try {
     // Build query parameters for backend filtering and sorting
     const params = new URLSearchParams()
@@ -85,14 +82,14 @@ const fetchItems = async () => {
   } catch (error) {
     console.log('Error fetching items:', error)
   }
-}
+}, [currentCity, sortBy, filterFoodType, filterCategory, dispatch])
 
 // useEffect to fetch items when filters or sorting changes
 useEffect(() => {
   if (currentCity) {
     fetchItems()
   }
-}, [currentCity, sortBy, filterFoodType, filterCategory])
+}, [currentCity, fetchItems])
 
 // useEffect to listen for real-time stock updates
 useEffect(() => {
@@ -109,7 +106,7 @@ useEffect(() => {
       socket.off('stockStatusUpdate')
     }
   }
-}, [socket, currentCity])
+}, [socket, currentCity, fetchItems])
 
 // Ensure items are displayed when they are loaded
 useEffect(() => {
@@ -156,14 +153,6 @@ useEffect(() => {
         dispatch(setItemsInMyCity(filteredItems))
       } else {
         // Shop reopened - fetch fresh data to include its items
-        const fetchItems = async () => {
-          try {
-            const result = await axios.get(`${serverUrl}/api/item/get-by-city/${currentCity}`, { withCredentials: true })
-            dispatch(setItemsInMyCity(result.data))
-          } catch (error) {
-            console.log('Error fetching items after shop reopened:', error)
-          }
-        }
         fetchItems()
       }
     })
@@ -173,7 +162,7 @@ useEffect(() => {
       socket.off('shopStatusUpdate')
     }
   }
-}, [socket, itemsInMyCity, shopInMyCity, currentCity, dispatch])
+}, [socket, itemsInMyCity, shopInMyCity, currentCity, dispatch, fetchItems])
 
 // Fetch categories from API
 useEffect(() => {
@@ -203,12 +192,7 @@ const applySortingAndFiltering = (items) => {
   return items || []
 }
 
-const clearFilters = () => {
-  setSortBy('')
-  setFilterCategory('All')
-  setFilterFoodType('All')
-  // Items will be refetched automatically due to useEffect dependency
-}
+// clearFilters removed as filters are toggled individually
 
   const updateButton=(ref,setLeftButton,setRightButton)=>{
 const element=ref.current
@@ -230,27 +214,37 @@ setRightButton(element.scrollLeft+element.clientWidth<element.scrollWidth)
 
 
 
-  useEffect(()=>{
-    if(cateScrollRef.current){
-      updateButton(cateScrollRef,setShowLeftCateButton,setShowRightCateButton)
-      updateButton(shopScrollRef,setShowLeftShopButton,setShowRightShopButton)
-      cateScrollRef.current.addEventListener('scroll',()=>{
-        updateButton(cateScrollRef,setShowLeftCateButton,setShowRightCateButton)
-      })
-      shopScrollRef.current.addEventListener('scroll',()=>{
-         updateButton(shopScrollRef,setShowLeftShopButton,setShowRightShopButton)
-      })
-     
+  useEffect(() => {
+    const cateEl = cateScrollRef.current
+    const shopEl = shopScrollRef.current
+
+    if (cateEl) {
+      updateButton(cateScrollRef, setShowLeftCateButton, setShowRightCateButton)
+      const onCateScroll = () => {
+        updateButton(cateScrollRef, setShowLeftCateButton, setShowRightCateButton)
+      }
+      cateEl.addEventListener('scroll', onCateScroll)
+
+      if (shopEl) {
+        updateButton(shopScrollRef, setShowLeftShopButton, setShowRightShopButton)
+        const onShopScroll = () => {
+          updateButton(shopScrollRef, setShowLeftShopButton, setShowRightShopButton)
+        }
+        shopEl.addEventListener('scroll', onShopScroll)
+
+        return () => {
+          cateEl.removeEventListener('scroll', onCateScroll)
+          shopEl.removeEventListener('scroll', onShopScroll)
+        }
+      }
+
+      return () => {
+        cateEl.removeEventListener('scroll', onCateScroll)
+      }
     }
 
-    return ()=>{cateScrollRef?.current?.removeEventListener("scroll",()=>{
-        updateButton(cateScrollRef,setShowLeftCateButton,setShowRightCateButton)
-      })
-         shopScrollRef?.current?.removeEventListener("scroll",()=>{
-        updateButton(shopScrollRef,setShowLeftShopButton,setShowRightShopButton)
-      })}
-
-  },[dynamicCategories])
+    return undefined
+  }, [dynamicCategories])
 
 
   return (
@@ -367,7 +361,7 @@ setRightButton(element.scrollLeft+element.clientWidth<element.scrollWidth)
 
        <div className='w-full h-auto flex flex-wrap gap-[20px] justify-center'>
          {updatedItemsList && updatedItemsList.length > 0 ? (
-           updatedItemsList.map((item,index)=>(
+           updatedItemsList.map((item)=>(
              <FoodCard key={item._id} data={item}/>
            ))
          ) : (

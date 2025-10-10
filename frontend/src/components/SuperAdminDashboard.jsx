@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -47,39 +47,7 @@ const SuperAdminDashboard = () => {
     axios.defaults.baseURL = serverUrl;
     axios.defaults.withCredentials = true;
 
-    useEffect(() => {
-        // Fetch initial dashboard stats
-        fetchDashboardStats();
-        
-        // Auto-refresh dashboard stats every 30 seconds
-        const interval = setInterval(fetchDashboardStats, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        // Fetch data based on active tab
-        if (activeTab === 'deliveryboys') {
-            fetchPendingDeliveryBoys();
-        } else if (activeTab === 'owners') {
-            fetchPendingOwners();
-        } else if (activeTab === 'categories') {
-            fetchCategories();
-        } else if (activeTab === 'users') {
-            fetchUsers();
-        } else if (activeTab === 'usertypes') {
-            fetchUserTypes();
-        }
-    }, [activeTab]);
-
-    useEffect(() => {
-        // Debounced search for users
-        if (activeTab === 'users') {
-            const debounceTimer = setTimeout(() => {
-                fetchUsers();
-            }, 500);
-            return () => clearTimeout(debounceTimer);
-        }
-    }, [searchRole, searchTerm, activeTab]);
+    // Effects moved below to avoid referencing callbacks before initialization
 
     const showMessage = (message, type = 'success') => {
         if (type === 'success') {
@@ -107,7 +75,7 @@ const SuperAdminDashboard = () => {
     };
 
     // Fetch dashboard statistics
-    const fetchDashboardStats = async () => {
+    const fetchDashboardStats = useCallback(async () => {
         try {
             setLoading(true);
             const response = await axios.get('/api/superadmin/dashboard-stats');
@@ -118,10 +86,10 @@ const SuperAdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // Fetch pending delivery boys
-    const fetchPendingDeliveryBoys = async () => {
+    const fetchPendingDeliveryBoys = useCallback(async () => {
         try {
             setLoading(true);
             const response = await axios.get('/api/superadmin/pending-deliveryboys');
@@ -132,10 +100,10 @@ const SuperAdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // Fetch pending owners
-    const fetchPendingOwners = async () => {
+    const fetchPendingOwners = useCallback(async () => {
         try {
             setLoading(true);
             const response = await axios.get('/api/superadmin/pending-owners');
@@ -146,7 +114,7 @@ const SuperAdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // Update delivery boy status
     const updateDeliveryBoyStatus = async (userId, action) => {
@@ -181,7 +149,7 @@ const SuperAdminDashboard = () => {
     };
 
     // Fetch categories
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             setLoading(true);
             const response = await axios.get('/api/superadmin/categories');
@@ -192,7 +160,7 @@ const SuperAdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // Create category
     const createCategory = async () => {
@@ -302,7 +270,7 @@ const SuperAdminDashboard = () => {
     };
 
     // Fetch users
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -317,10 +285,10 @@ const SuperAdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchRole, searchTerm]);
 
     // Fetch user types
-    const fetchUserTypes = async () => {
+    const fetchUserTypes = useCallback(async () => {
         try {
             setLoading(true);
             const response = await axios.get('/api/superadmin/user-types');
@@ -331,7 +299,39 @@ const SuperAdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    // Fetch initial dashboard stats and set auto-refresh
+    useEffect(() => {
+        fetchDashboardStats();
+        const interval = setInterval(fetchDashboardStats, 30000);
+        return () => clearInterval(interval);
+    }, [fetchDashboardStats]);
+
+    // Fetch data based on active tab
+    useEffect(() => {
+        if (activeTab === 'deliveryboys') {
+            fetchPendingDeliveryBoys();
+        } else if (activeTab === 'owners') {
+            fetchPendingOwners();
+        } else if (activeTab === 'categories') {
+            fetchCategories();
+        } else if (activeTab === 'users') {
+            fetchUsers();
+        } else if (activeTab === 'usertypes') {
+            fetchUserTypes();
+        }
+    }, [activeTab, fetchPendingDeliveryBoys, fetchPendingOwners, fetchCategories, fetchUsers, fetchUserTypes]);
+
+    // Debounced search for users
+    useEffect(() => {
+        if (activeTab === 'users') {
+            const debounceTimer = setTimeout(() => {
+                fetchUsers();
+            }, 500);
+            return () => clearTimeout(debounceTimer);
+        }
+    }, [searchRole, searchTerm, activeTab, fetchUsers]);
 
     // Create user type
     const createUserType = async () => {
