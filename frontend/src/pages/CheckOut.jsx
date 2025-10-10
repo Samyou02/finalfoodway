@@ -18,40 +18,13 @@ function CheckOut() {
   const [orderType, setOrderType] = useState("delivery") // delivery or pickup
   const navigate=useNavigate()
   const dispatch = useDispatch()
-  // New delivery fee calculation based on the formula:
-  // Payout=max(MinFloor,(B+(D_rate×dist)+(T_rate×travel_time)+C)×M_demand+I−P)
-  const calculateDeliveryFee = () => {
-    if (orderType !== "delivery") return 0;
-    
-    // Constants for the formula
-    const MinFloor = 30; // Minimum payout ₹30
-    const B = totalAmount < 100 ? 20 : 15; // Base pay: ₹20 for below 1km equivalent, ₹15 otherwise
-    const D_rate = 50; // Distance rate ₹50/km
-    const T_rate = 1; // Time rate ₹1/min
-    const C = 0; // Order complexity fee (standard order)
-    const I = 20; // Incentives ₹20 bonus
-    const P = 0; // Cancellation penalty ₹0
-    
-    // Estimated values (in real app, these would come from maps API)
-    const estimatedDistance = 1.5; // km
-    const estimatedTravelTime = 10; // minutes
-    
-    // Check if it's peak hours (6-9 AM, 12-2 PM, 6-10 PM)
-    const currentHour = new Date().getHours();
-    const isPeakHours = (currentHour >= 6 && currentHour <= 9) || 
-                       (currentHour >= 12 && currentHour <= 14) || 
-                       (currentHour >= 18 && currentHour <= 22);
-    const M_demand = isPeakHours ? 1.5 : 1.0; // Demand multiplier
-    
-    // Calculate payout using the formula
-    const calculatedPayout = (B + (D_rate * estimatedDistance) + (T_rate * estimatedTravelTime) + C) * M_demand + I - P;
-    const finalPayout = Math.max(MinFloor, calculatedPayout);
-    
-    return Math.round(finalPayout);
-  };
-  
-  const deliveryFee = calculateDeliveryFee();
-  const AmountWithDeliveryFee = totalAmount + deliveryFee;
+  // Fee breakdown per your specification
+  const round2 = (n) => Math.round(n * 100) / 100
+  const ownerShare = round2(totalAmount)
+  const deliveryBoyShare = orderType === "delivery" ? round2(totalAmount * 0.08) : 0
+  const superadminFee = round2(totalAmount * 0.20)
+  const paymentFee = paymentMethod === "online" ? round2(totalAmount * 0.02) : 0
+  const grandTotal = round2(ownerShare + deliveryBoyShare + superadminFee + paymentFee)
 
   const handlePlaceOrder=async () => {
     // Validate required fields
@@ -81,7 +54,7 @@ function CheckOut() {
           text:addressInput.trim()
         } : null,
         phoneNumber: phoneNumber.trim(),
-        totalAmount:AmountWithDeliveryFee,
+        totalAmount:grandTotal,
         cartItems
       },{withCredentials:true})
 
@@ -273,16 +246,26 @@ const openRazorpayWindow=(orderId,razorOrder)=>{
 ))}
  <hr className='border-gray-200 my-2'/>
 <div className='flex justify-between font-medium text-gray-800'>
-  <span>Subtotal</span>
-  <span>{totalAmount}</span>
+  <span>Subtotal (Owner Share)</span>
+  <span>{ownerShare}</span>
+</div>
+{orderType === "delivery" && (
+  <div className='flex justify-between text-gray-700'>
+    <span>Delivery Boy Share (8%)</span>
+    <span>{deliveryBoyShare}</span>
+  </div>
+)}
+<div className='flex justify-between text-gray-700'>
+  <span>Superadmin Fee (20%)</span>
+  <span>{superadminFee}</span>
 </div>
 <div className='flex justify-between text-gray-700'>
-  <span>{orderType === "delivery" ? "Delivery Fee" : "Pickup"}</span>
-  <span>{orderType === "delivery" ? (deliveryFee==0?"Free":deliveryFee) : "Free"}</span>
+  <span>Payment Fee (2%) {paymentMethod!=="online" && "- COD"}</span>
+  <span>{paymentFee}</span>
 </div>
 <div className='flex justify-between text-lg font-bold text-[#ff4d2d] pt-2'>
     <span>Total</span>
-  <span>{AmountWithDeliveryFee}</span>
+  <span>{grandTotal}</span>
 </div>
 </div>
         </section>

@@ -69,11 +69,20 @@ export const placeOrder = async (req, res) => {
             }
             const items = groupItemsByShop[shopId]
             const subtotal = items.reduce((sum, i) => sum + Number(i.price) * Number(i.quantity), 0)
+            const round2 = (n) => Math.round(n * 100) / 100
+            const ownerShare = round2(subtotal * 0.70)
+            const deliveryBoyShare = round2(subtotal * 0.80)
+            const superadminFee = round2(subtotal * 0.20)
+            const paymentFee = round2(subtotal * 0.02)
             return {
                 shop: shop._id,
                 owner: shop.owner._id,
                 status: "pending",
                 subtotal,
+                ownerShare,
+                deliveryBoyShare,
+                superadminFee,
+                paymentFee,
                 shopOrderItems: items.map((i) => ({
                     item: i.id,
                     price: i.price,
@@ -92,12 +101,17 @@ export const placeOrder = async (req, res) => {
                 currency: 'INR',
                 receipt: `receipt_${Date.now()}`
             })
+            const round2 = (n) => Math.round(n * 100) / 100
             const newOrder = await Order.create({
                 user: req.userId,
                 paymentMethod,
                 deliveryAddress: orderType === "delivery" ? deliveryAddress : null,
                 orderType: orderType || "delivery",
                 totalAmount,
+                ownerShare: round2(totalAmount * 0.70),
+                deliveryBoyShare: round2(totalAmount * 0.80),
+                superadminFee: round2(totalAmount * 0.20),
+                paymentFee: round2(totalAmount * 0.02),
                 shopOrders,
                 razorpayOrderId: razorOrder.id,
                 payment: false
@@ -110,12 +124,17 @@ export const placeOrder = async (req, res) => {
 
         }
 
+        const round2 = (n) => Math.round(n * 100) / 100
         const newOrder = await Order.create({
             user: req.userId,
             paymentMethod,
             deliveryAddress: orderType === "delivery" ? deliveryAddress : null,
             orderType: orderType || "delivery",
             totalAmount,
+            ownerShare: round2(totalAmount * 0.70),
+            deliveryBoyShare: round2(totalAmount * 0.80),
+            superadminFee: round2(totalAmount * 0.20),
+            paymentFee: round2(totalAmount * 0.02),
             shopOrders
         })
 

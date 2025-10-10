@@ -39,6 +39,11 @@ const shopOrderSchema = new mongoose.Schema({
         ref: "User"
     },
     subtotal: Number,
+    // Revenue split fields computed at order placement
+    ownerShare: { type: Number, default: 0 },
+    deliveryBoyShare: { type: Number, default: 0 },
+    superadminFee: { type: Number, default: 0 },
+    paymentFee: { type: Number, default: 0 },
     shopOrderItems: [shopOrderItemSchema],
     status:{
         type:String,
@@ -107,6 +112,11 @@ const orderSchema = new mongoose.Schema({
         type: Number
     }
     ,
+    // Order-level revenue split fields based on totalAmount
+    ownerShare: { type: Number, default: 0 },
+    deliveryBoyShare: { type: Number, default: 0 },
+    superadminFee: { type: Number, default: 0 },
+    paymentFee: { type: Number, default: 0 },
     shopOrders: [shopOrderSchema],
     payment:{
         type:Boolean,
