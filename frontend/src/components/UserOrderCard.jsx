@@ -244,25 +244,9 @@ function UserOrderCard({ data }) {
                         </div>
                     )}
 
-                    {/* Rate Delivery Boy and Shop after delivery */}
+                    {/* Rate Restaurant after delivery */}
                     {shopOrder.status === 'delivered' && (
-                        <div className='mt-3 grid grid-cols-1 md:grid-cols-2 gap-3'>
-                            <div className='p-3 bg-gradient-to-r from-green-50 to-emerald-50 border rounded-lg'>
-                                <p className='text-sm font-semibold text-emerald-800 mb-1'>Rate Delivery</p>
-                                <div className='flex space-x-1'>
-                                    {[1,2,3,4,5].map(star => (
-                                        <button
-                                            key={star}
-                                            className={`text-xl ${ (entityRatings[`${shopOrder._id}-deliveryBoy`] || 0) >= star ? 'text-yellow-400' : 'text-gray-300' } ${!shopOrder.assignedDeliveryBoy ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            onClick={() => shopOrder.assignedDeliveryBoy && handleEntityRating(shopOrder, 'deliveryBoy', star)}
-                                            disabled={!shopOrder.assignedDeliveryBoy}
-                                        >★</button>
-                                    ))}
-                                </div>
-                                {!shopOrder.assignedDeliveryBoy && (
-                                    <p className='text-xs text-emerald-700 mt-1'>No delivery person assigned for this order.</p>
-                                )}
-                            </div>
+                        <div className='mt-3'>
                             <div className='p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border rounded-lg'>
                                 <p className='text-sm font-semibold text-indigo-800 mb-1'>Rate Restaurant</p>
                                 <div className='flex space-x-1'>

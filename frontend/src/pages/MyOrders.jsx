@@ -8,6 +8,7 @@ import DeliveryBoyOrderCard from '../components/DeliveryBoyOrderCard';
 import ErrorBoundary from '../components/ErrorBoundary';
 import useGetMyOrders from '../hooks/useGetMyOrders';
 import { setMyOrders, updateOrderStatus, updateRealtimeOrderStatus } from '../redux/userSlice';
+import DeliveryRatingPopup from '../components/DeliveryRatingPopup';
 
 
 function MyOrders() {
@@ -90,6 +91,7 @@ const dispatch=useDispatch()
           )}
         </div>
       </div>
+      {userData?.role === 'user' && <DeliveryRatingPopup />}
     </div>
   )
 }

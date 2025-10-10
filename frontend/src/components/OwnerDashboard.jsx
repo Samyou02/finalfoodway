@@ -29,6 +29,22 @@ function OwnerDashboard() {
     fetchRatings()
   }, [])
 
+  // Lightweight refresh to get latest shop data (ensures ratings aggregates are up-to-date)
+  React.useEffect(() => {
+    const refreshShop = async () => {
+      try {
+        const res = await axios.get(`${serverUrl}/api/shop/get-my`, { withCredentials: true })
+        dispatch(setMyShopData(res.data))
+      } catch (error) {
+        // Non-blocking; shop might not exist yet for this owner
+        if (!(error?.response?.status === 400)) {
+          console.log('refresh my shop error', error?.response?.data || error)
+        }
+      }
+    }
+    refreshShop()
+  }, [dispatch])
+
   const handleShopStatusToggle = async () => {
     try {
       setIsUpdatingStatus(true)
