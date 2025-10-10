@@ -3,16 +3,27 @@ import bcrypt from 'bcryptjs';
 import User from '../models/user.model.js';
 import Category from '../models/category.model.js';
 import dotenv from 'dotenv';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 dotenv.config();
 
 const connectDB = async () => {
+    const uri = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/foodway';
     try {
-        await mongoose.connect(process.env.MONGODB_URL);
-        console.log('MongoDB connected successfully');
+        await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+        console.log(`MongoDB connected successfully (${uri})`);
     } catch (error) {
-        console.error('MongoDB connection error:', error);
-        process.exit(1);
+        console.error('MongoDB connection error:', error?.message || error);
+        console.log('Falling back to in-memory MongoDB for seeding...');
+        try {
+            const mem = await MongoMemoryServer.create();
+            const memUri = mem.getUri();
+            await mongoose.connect(memUri);
+            console.log('Connected to in-memory MongoDB');
+        } catch (memErr) {
+            console.error('Failed to start in-memory MongoDB:', memErr?.message || memErr);
+            process.exit(1);
+        }
     }
 };
 

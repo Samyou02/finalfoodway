@@ -419,15 +419,8 @@ export const updateOrderStatus = async (req, res) => {
                 role: "deliveryBoy"
             })
 
-            const allDeliveryBoyIds = allDeliveryBoys.map(b => b._id)
-            const busyIds = await DeliveryAssignment.find({
-                assignedTo: { $in: allDeliveryBoyIds },
-                status: { $nin: ["brodcasted", "completed"] }
-            }).distinct("assignedTo")
-
-            const busyIdSet = new Set(busyIds.map(id => String(id)))
-
-            const availableBoys = allDeliveryBoys.filter(b => !busyIdSet.has(String(b._id)) && b.isActive === true)
+            // Broadcast to all active delivery boys, even if they already have assignments
+            const availableBoys = allDeliveryBoys.filter(b => b.isActive === true)
             const candidates = availableBoys.map(b => b._id)
 
             // Always create a delivery assignment even if there are no available
@@ -578,14 +571,7 @@ export const acceptOrder = async (req, res) => {
             return res.status(400).json({ message: "assignment is expired" })
         }
 
-        const alreadyAssigned = await DeliveryAssignment.findOne({
-            assignedTo: req.userId,
-            status: { $nin: ["brodcasted", "completed"] }
-        })
-
-        if (alreadyAssigned) {
-            return res.status(400).json({ message: "You are already assigned to another order" })
-        }
+        // Allow multiple concurrent assignments per delivery boy
 
         assignment.assignedTo = req.userId
         assignment.status = 'assigned'
@@ -699,6 +685,57 @@ export const getCurrentOrder = async (req, res) => {
 
     } catch (error) {
 
+    }
+}
+
+// Return all current assigned orders for the delivery boy
+export const getCurrentOrders = async (req, res) => {
+    try {
+        const assignments = await DeliveryAssignment.find({
+            assignedTo: req.userId,
+            status: "assigned"
+        })
+            .populate("shop", "name")
+            .populate("assignedTo", "fullName email mobile location")
+            .populate({
+                path: "order",
+                populate: [{ path: "user", select: "fullName email location mobile" }]
+            })
+
+        if (!assignments || assignments.length === 0) {
+            return res.status(200).json([])
+        }
+
+        const result = assignments.map(assignment => {
+            if (!assignment.order) return null
+            const shopOrder = assignment.order.shopOrders.find(so => String(so._id) === String(assignment.shopOrderId))
+            if (!shopOrder) return null
+
+            let deliveryBoyLocation = { lat: null, lon: null }
+            if (assignment.assignedTo?.location?.coordinates?.length === 2) {
+                deliveryBoyLocation.lat = assignment.assignedTo.location.coordinates[1]
+                deliveryBoyLocation.lon = assignment.assignedTo.location.coordinates[0]
+            }
+
+            let customerLocation = { lat: null, lon: null }
+            if (assignment.order.deliveryAddress) {
+                customerLocation.lat = assignment.order.deliveryAddress.latitude
+                customerLocation.lon = assignment.order.deliveryAddress.longitude
+            }
+
+            return {
+                orderId: assignment.order._id,
+                user: assignment.order.user,
+                shopOrder,
+                deliveryAddress: assignment.order.deliveryAddress,
+                deliveryBoyLocation,
+                customerLocation
+            }
+        }).filter(Boolean)
+
+        return res.status(200).json(result)
+    } catch (error) {
+        return res.status(500).json({ message: `get current orders error ${error}` })
     }
 }
 

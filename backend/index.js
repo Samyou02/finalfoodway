@@ -21,7 +21,19 @@ import { autoRegenerateOtps } from "./controllers/order.controllers.js"
 const app=express()
 const server=http.createServer(app)
 
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"]
+// Allow common Vite dev ports and make 5180 explicit
+const envAllowed = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean)
+const defaultAllowed = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:5180",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:5175",
+  "http://127.0.0.1:5180",
+]
+const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowed
 const io=new Server(server,{
    cors:{
     origin: allowedOrigins,
@@ -39,16 +51,24 @@ app.use((req, res, next) => {
 })
 
 const port=process.env.PORT || 5000
+const isLocalDev = (o) => {
+  try {
+    return /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(o)
+  } catch {
+    return false
+  }
+}
+
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true)
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true)
-        }
-        return callback(new Error('Not allowed by CORS'))
-    },
-    credentials:true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.includes(origin) || isLocalDev(origin)) {
+      return callback(null, true)
+    }
+    return callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true
 }))
 app.use(express.json())
 app.use(cookieParser())

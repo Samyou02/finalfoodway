@@ -13,10 +13,11 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 function DeliveryBoy() {
   const {userData,socket}=useSelector(state=>state.user)
   const dispatch = useDispatch()
-  const [currentOrder,setCurrentOrder]=useState()
-  const [showOtpBox,setShowOtpBox]=useState(false)
+  const [currentOrders,setCurrentOrders]=useState([])
   const [availableAssignments,setAvailableAssignments]=useState(null)
-  const [otp,setOtp]=useState("")
+  const [otpValues,setOtpValues]=useState({})
+  const [showOtpFor,setShowOtpFor]=useState({})
+  const [messages,setMessages]=useState({})
   const [todayDeliveries,setTodayDeliveries]=useState({ totalDeliveries: 0, chartData: [], deliveries: [] })
 
 const [loading,setLoading]=useState(false)
@@ -58,17 +59,12 @@ const [message,setMessage]=useState("")
       setLoading(false)
     }
   }
-  const getCurrentOrder=async () => {
+  const getCurrentOrders=async () => {
      try {
-      const result=await axios.get(`${serverUrl}/api/order/get-current-order`,{withCredentials:true})
-      setCurrentOrder(result.data)
+      const result=await axios.get(`${serverUrl}/api/order/get-current-orders`,{withCredentials:true})
+      setCurrentOrders(Array.isArray(result.data) ? result.data : [])
     } catch (error) {
-      // Gracefully ignore 400 when no current assignment is found
-      if (error.response && error.response.status === 400) {
-        setCurrentOrder(null)
-      } else {
-        console.log(error)
-      }
+      console.log(error)
     }
   }
 
@@ -77,7 +73,7 @@ const [message,setMessage]=useState("")
     try {
       const result=await axios.get(`${serverUrl}/api/order/accept-order/${assignmentId}`,{withCredentials:true})
     console.log(result.data)
-    await getCurrentOrder()
+    await getCurrentOrders()
     } catch (error) {
       console.log(error)
     }
@@ -160,7 +156,7 @@ const [message,setMessage]=useState("")
       }
     })()
 getAssignments()
-getCurrentOrder()
+getCurrentOrders()
 handleTodayDeliveries()
   },[userData])
   return (
@@ -231,7 +227,7 @@ handleTodayDeliveries()
 </div>
 
 
-{!currentOrder && <div className='bg-white rounded-2xl p-5 shadow-md w-[90%] border border-orange-100'>
+<div className='bg-white rounded-2xl p-5 shadow-md w-[90%] border border-orange-100'>
 <h1 className='text-lg font-bold mb-4 flex items-center gap-2'>Available Orders</h1>
 
 <div className='space-y-4'>
@@ -254,32 +250,65 @@ availableAssignments.map((a,index)=>(
 ))
 ):<p className='text-gray-400 text-sm'>No Available Orders</p>}
 </div>
-</div>}
-
-{currentOrder && <div className='bg-white rounded-2xl p-5 shadow-md w-[90%] border border-orange-100'>
-<h2 className='text-lg font-bold mb-3'>📦Current Order</h2>
-<div className='border rounded-lg p-4 mb-3'>
-  <p className='font-semibold text-sm'>{currentOrder?.shopOrder.shop.name}</p>
-  <p className='text-sm text-gray-500'>{currentOrder.deliveryAddress.text}</p>
- <p className='text-xs text-gray-400'>{currentOrder.shopOrder.shopOrderItems.length} items | {currentOrder.shopOrder.subtotal}</p>
 </div>
 
- <div className='mt-4 p-4 border rounded-xl bg-blue-50'>
-  <h3 className='font-semibold text-sm mb-2'>📍 Delivery Information</h3>
-  <p className='text-sm text-gray-600 mb-1'><span className='font-medium'>Delivery Address:</span> {currentOrder.deliveryAddress.text}</p>
-  <p className='text-sm text-gray-600'><span className='font-medium'>Customer:</span> {currentOrder.user.fullName}</p>
- </div>
-{!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={sendOtp} disabled={loading}>
-{loading?<ClipLoader size={20} color='white'/> :"Mark As Delivered"}
- </button>:<div className='mt-4 p-4 border rounded-xl bg-gray-50'>
-<p className='text-sm font-semibold mb-2'>Enter Otp send to <span className='text-orange-500'>{currentOrder.user.fullName}</span></p>
-<input type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' onChange={(e)=>setOtp(e.target.value)} value={otp}/>
-{message && <p className='text-center text-green-400 text-2xl mb-4'>{message}</p>}
+<div className='bg-white rounded-2xl p-5 shadow-md w-[90%] border border-orange-100'>
+<h2 className='text-lg font-bold mb-3'>📦 Current Orders</h2>
+{currentOrders && currentOrders.length > 0 ? (
+  currentOrders.map((co, idx) => {
+    const key = `${co.orderId}-${co.shopOrder._id}`
+    return (
+      <div key={key} className='border rounded-lg p-4 mb-4'>
+        <div className='flex justify-between items-start'>
+          <div>
+            <p className='font-semibold text-sm'>{co?.shopOrder.shop.name}</p>
+            <p className='text-sm text-gray-500'>{co.deliveryAddress.text}</p>
+            <p className='text-xs text-gray-400'>{co.shopOrder.shopOrderItems.length} items | {co.shopOrder.subtotal}</p>
+          </div>
+        </div>
 
-<button className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all" onClick={verifyOtp}>Submit OTP</button>
-  </div>}
+        <div className='mt-3 p-3 border rounded-xl bg-blue-50'>
+          <h3 className='font-semibold text-sm mb-2'>📍 Delivery Information</h3>
+          <p className='text-sm text-gray-600 mb-1'><span className='font-medium'>Delivery Address:</span> {co.deliveryAddress.text}</p>
+          <p className='text-sm text-gray-600'><span className='font-medium'>Customer:</span> {co.user.fullName}</p>
+        </div>
 
-  </div>}
+        {!showOtpFor[key] ? (
+          <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={() => setShowOtpFor(prev => ({ ...prev, [key]: true }))} disabled={loading}>
+            {loading ? <ClipLoader size={20} color='white'/> : 'Mark As Delivered'}
+          </button>
+        ) : (
+          <div className='mt-4 p-4 border rounded-xl bg-gray-50'>
+            <p className='text-sm font-semibold mb-2'>Enter OTP sent to <span className='text-orange-500'>{co.user.fullName}</span></p>
+            <input type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' onChange={(e)=>setOtpValues(prev => ({ ...prev, [key]: e.target.value }))} value={otpValues[key] || ''}/>
+            {messages[key] && <p className='text-center text-green-400 text-2xl mb-4'>{messages[key]}</p>}
+            <button className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all" onClick={async () => {
+              try {
+                setLoading(true)
+                const res = await axios.post(`${serverUrl}/api/order/verify-delivery-otp`, { orderId: co.orderId, shopOrderId: co.shopOrder._id, otp: otpValues[key] }, { withCredentials: true })
+                setMessages(prev => ({ ...prev, [key]: res.data.message }))
+                // Remove from current orders on success
+                setCurrentOrders(prev => prev.filter(o => `${o.orderId}-${o.shopOrder._id}` !== key))
+                setOtpValues(prev => { const n = { ...prev }; delete n[key]; return n })
+                setShowOtpFor(prev => { const n = { ...prev }; delete n[key]; return n })
+                await getAssignments()
+                await handleTodayDeliveries()
+              } catch (error) {
+                setMessages(prev => ({ ...prev, [key]: error.response?.data?.message || 'Failed to verify OTP' }))
+              } finally {
+                setLoading(false)
+              }
+            }}>Submit OTP</button>
+          </div>
+        )}
+      </div>
+    )
+  })
+) : (
+  <p className='text-sm text-gray-500'>No current orders</p>
+)}
+
+</div>
 
 
       </div>
