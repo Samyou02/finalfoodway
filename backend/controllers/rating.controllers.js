@@ -82,8 +82,15 @@ export const getMyDeliveryRatings = async (req, res) => {
   try {
     const deliveryBoyId = req.userId
     const ratings = await Rating.find({ type: 'deliveryBoy', target: deliveryBoyId }).sort({ createdAt: -1 })
-    const me = await User.findById(deliveryBoyId)
-    return res.status(200).json({ summary: me?.rating || { average: 0, count: 0 }, ratings })
+
+    // Compute accurate aggregate directly from ratings to avoid any stale values
+    const agg = await Rating.aggregate([
+      { $match: { type: 'deliveryBoy', target: new mongoose.Types.ObjectId(deliveryBoyId) } },
+      { $group: { _id: '$target', avg: { $avg: '$stars' }, count: { $sum: 1 } } }
+    ])
+    const summary = agg?.[0] ? { average: agg[0].avg || 0, count: agg[0].count || 0 } : { average: 0, count: 0 }
+
+    return res.status(200).json({ summary, ratings })
   } catch (error) {
     return res.status(500).json({ message: `get delivery ratings error ${error}` })
   }

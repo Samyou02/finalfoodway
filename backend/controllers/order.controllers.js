@@ -331,6 +331,8 @@ export const getMyOrders = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .populate("shopOrders.shop", "name")
                 .populate("shopOrders.owner", "fullName email mobile")
+                // Ensure delivery boy info is available to the user UI for ratings
+                .populate("shopOrders.assignedDeliveryBoy", "fullName mobile")
                 .populate("shopOrders.shopOrderItems.item", "name image price")
 
             return res.status(200).json(orders)
