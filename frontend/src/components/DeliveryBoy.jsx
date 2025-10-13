@@ -248,7 +248,7 @@ availableAssignments.map((a,index)=>(
   <div className='border rounded-lg p-4 flex justify-between items-center' key={index}>
    <div>
     <p className='text-sm font-semibold'>{a?.shopName}</p>
-    <p className='text-sm text-gray-500'><span className='font-semibold'>Delivery Address:</span> {a?.deliveryAddress.text}</p>
+    <p className='text-sm text-gray-500'><span className='font-semibold'>Delivery Address:</span> {a?.deliveryAddress?.text || 'Address not available'}</p>
 <p className='text-xs text-gray-400'>{a.items.length} items | {a.subtotal}</p>
 {a.receiptNumber && (
   <p className='text-xs text-green-700 mt-1'>Receipt: {a.receiptNumber}</p>
@@ -272,14 +272,14 @@ availableAssignments.map((a,index)=>(
         <div className='flex justify-between items-start'>
           <div>
             <p className='font-semibold text-sm'>{co?.shopOrder.shop.name}</p>
-            <p className='text-sm text-gray-500'>{co.deliveryAddress.text}</p>
+            <p className='text-sm text-gray-500'>{co.deliveryAddress?.text || 'Address not available'}</p>
             <p className='text-xs text-gray-400'>{co.shopOrder.shopOrderItems.length} items | {co.shopOrder.subtotal}</p>
           </div>
         </div>
 
         <div className='mt-3 p-3 border rounded-xl bg-blue-50'>
           <h3 className='font-semibold text-sm mb-2'>📍 Delivery Information</h3>
-          <p className='text-sm text-gray-600 mb-1'><span className='font-medium'>Delivery Address:</span> {co.deliveryAddress.text}</p>
+          <p className='text-sm text-gray-600 mb-1'><span className='font-medium'>Delivery Address:</span> {co.deliveryAddress?.text || 'Address not available'}</p>
           <p className='text-sm text-gray-600'><span className='font-medium'>Customer:</span> {co.user.fullName}</p>
         </div>
 

@@ -440,6 +440,11 @@ export const updateOrderStatus = async (req, res) => {
             return res.status(400).json({ message: `Status change not allowed from '${prevStatus}' to '${status}'` })
         }
 
+        // For pickup orders, do not allow transitioning to 'out of delivery'
+        if (status === 'out of delivery' && order.orderType === 'pickup') {
+            return res.status(400).json({ message: 'Pickup orders do not go out for delivery' })
+        }
+
         shopOrder.status = status
 
         // Ensure sequential orderId is generated when status changes to key states
@@ -475,7 +480,8 @@ export const updateOrderStatus = async (req, res) => {
         }
         
         let deliveryBoysPayload = []
-        if (status == "out of delivery" && !shopOrder.assignment) {
+        // Only create assignments for DELIVERY orders
+        if (status == "out of delivery" && order.orderType === 'delivery' && !shopOrder.assignment) {
             // Get all delivery boys regardless of location
             const allDeliveryBoys = await User.find({
                 role: "deliveryBoy"
@@ -535,8 +541,8 @@ export const updateOrderStatus = async (req, res) => {
         }
 
 
-        // Auto-generate OTP when order goes out for delivery if none exists or expired
-        if (status === "out of delivery") {
+        // Auto-generate OTP only for DELIVERY orders going out for delivery
+        if (status === "out of delivery" && order.orderType === 'delivery') {
             const now = Date.now()
             if (!shopOrder.deliveryOtp || !shopOrder.otpExpires || shopOrder.otpExpires <= now) {
                 const otp = Math.floor(1000 + Math.random() * 9000).toString()
@@ -553,6 +559,13 @@ export const updateOrderStatus = async (req, res) => {
                     console.error(`[MAILER] delivery OTP mail failed: ${e?.message || e}`)
                 }
             }
+        }
+
+        // When owner marks a PICKUP order as delivered, set deliveredAt and clear any stale assignment
+        if (status === 'delivered' && order.orderType === 'pickup') {
+            shopOrder.deliveredAt = new Date()
+            shopOrder.assignedDeliveryBoy = null
+            shopOrder.assignment = null
         }
 
         await order.save()

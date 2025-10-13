@@ -22,8 +22,8 @@ function OwnerOrderCard({ data }) {
             const result=await axios.post(`${serverUrl}/api/order/update-status/${orderId}/${shopId}`,{status},{withCredentials:true})
              dispatch(updateOrderStatus({orderId,shopId,status}))
              setAvailableBoys(result.data.availableBoys)
-             // Refresh orders when receipt can be generated on status changes
-             if(['confirmed','preparing','out of delivery'].includes(status)){
+             // Refresh orders for key status changes
+             if(['confirmed','preparing','out of delivery','delivered'].includes(status)){
                 const res = await axios.get(`${serverUrl}/api/order/my-orders`,{withCredentials:true})
                 dispatch(setMyOrders(res.data))
              }
@@ -121,17 +121,17 @@ function OwnerOrderCard({ data }) {
                           <option value="confirmed">Confirm</option>
                           <option value="rejected">Reject</option>
                           <option value="preparing">Preparing</option>
-                          <option value="out of delivery">Out Of Delivery</option>
+                          {data?.deliveryAddress?.text && <option value="out of delivery">Out Of Delivery</option>}
                         </>}
                         {/* From confirmed: can switch to preparing, out of delivery, or reject */}
                         {data?.shopOrders?.status === "confirmed" && <>
                           <option value="preparing">Preparing</option>
-                          <option value="out of delivery">Out Of Delivery</option>
+                          {data?.deliveryAddress?.text && <option value="out of delivery">Out Of Delivery</option>}
                           <option value="rejected">Reject</option>
                         </>}
                         {/* From preparing: can switch to out of delivery or reject */}
                         {data?.shopOrders?.status === "preparing" && <>
-                          <option value="out of delivery">Out Of Delivery</option>
+                          {data?.deliveryAddress?.text && <option value="out of delivery">Out Of Delivery</option>}
                           <option value="rejected">Reject</option>
                         </>}
                     </select>
@@ -141,6 +141,15 @@ function OwnerOrderCard({ data }) {
                          data?.shopOrders?.status === "out of delivery" ? 'Order is out for delivery' : 
                          'Status cannot be changed'}
                     </span>
+                )}
+                {/* For PICKUP orders, provide a direct "Mark as Delivered" action */}
+                {(!data?.isCancelled && !data?.deliveryAddress?.text && !['delivered','rejected'].includes(data?.shopOrders?.status)) && (
+                    <button
+                        className='ml-3 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-xs transition-colors duration-200'
+                        onClick={() => handleUpdateStatus(data._id, data?.shopOrders?.shop?._id, 'delivered')}
+                    >
+                        Mark as Delivered (Pickup)
+                    </button>
                 )}
             </div>
 
