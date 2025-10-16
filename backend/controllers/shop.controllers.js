@@ -58,7 +58,10 @@ export const getMyShop=async (req,res) => {
 
 export const getAllShops = async (req, res) => {
     try {
-        const shops = await Shop.find().populate("owner", "name email").select("name _id owner")
+        // Include image so frontend can render shop thumbnails in dashboard
+        const shops = await Shop.find()
+            .populate("owner", "name email")
+            .select("name _id owner image")
         return res.status(200).json(shops)
     } catch (error) {
         return res.status(500).json({message: `get all shops error ${error}`})
