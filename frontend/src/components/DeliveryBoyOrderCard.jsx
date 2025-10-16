@@ -41,17 +41,18 @@ function DeliveryBoyOrderCard({ data, onOrderUpdate }) {
     }
 
     const handleDeleteOrder = async () => {
-        if (!window.confirm('Remove this order from your dashboard?')) {
+        if (!window.confirm('Delete this order permanently?')) {
             return
         }
         setIsDeleting(true)
         try {
-            // Local-only removal from dashboard data
+            await axios.delete(`${serverUrl}/api/order/delete-order/${data._id}`, { withCredentials: true })
             const updatedOrders = myOrders.filter(order => order._id !== data._id)
             dispatch(setMyOrders(updatedOrders))
+            alert('Order deleted successfully')
         } catch (error) {
-            console.error('Error removing order locally:', error)
-            alert('Failed to update dashboard. Please try again.')
+            console.error('Error deleting order:', error)
+            alert(error.response?.data?.message || 'Failed to delete order. Please try again.')
         } finally {
             setIsDeleting(false)
         }
