@@ -73,7 +73,13 @@ const [loading,setLoading]=useState(false)
   const acceptOrder=async (assignmentId) => {
     try {
       await axios.get(`${serverUrl}/api/order/accept-order/${assignmentId}`,{withCredentials:true})
-    await getCurrentOrders()
+      
+      // Immediately remove the accepted order from available assignments
+      setAvailableAssignments(prev => prev.filter(assignment => assignment.assignmentId !== assignmentId))
+      
+      // Refresh current orders and available assignments
+      await getCurrentOrders()
+      await getAssignments()
     } catch (error) {
       console.log(error)
     }
