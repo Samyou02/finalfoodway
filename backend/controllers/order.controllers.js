@@ -27,6 +27,15 @@ export const placeOrder = async (req, res) => {
         if (cartItems.length == 0 || !cartItems) {
             return res.status(400).json({ message: "cart is empty" })
         }
+
+        // Validate that all items belong to the same shop
+        const shopIds = [...new Set(cartItems.map(item => item.shop))]
+        if (shopIds.length > 1) {
+            return res.status(400).json({ 
+                message: "All items must be from the same shop. Please order from one shop at a time.",
+                error: "MULTIPLE_SHOPS_IN_CART"
+            })
+        }
         
         // Only require delivery address for delivery orders
         if (orderType === "delivery" && (!deliveryAddress || !deliveryAddress.text)) {
@@ -611,12 +620,29 @@ export const updateOrderStatus = async (req, res) => {
 export const getDeliveryBoyAssignment = async (req, res) => {
     try {
         const deliveryBoyId = req.userId
+        
+        // Check if delivery boy is active
+        const deliveryBoy = await User.findById(deliveryBoyId)
+        if (!deliveryBoy || !deliveryBoy.isActive) {
+            return res.status(200).json([])
+        }
+
+        // Get ALL orders that are "out of delivery" (status: "brodcasted")
+        // This ensures active delivery boys can see all available orders
         const assignments = await DeliveryAssignment.find({
-            brodcastedTo: deliveryBoyId,
             status: "brodcasted"
         })
             .populate("order")
             .populate("shop")
+
+        // Add this delivery boy to brodcastedTo array if not already present
+        // This ensures they can accept any available order
+        for (const assignment of assignments) {
+            if (!assignment.brodcastedTo.includes(deliveryBoyId)) {
+                assignment.brodcastedTo.push(deliveryBoyId)
+                await assignment.save()
+            }
+        }
 
         const formated = assignments.map(a => ({
             assignmentId: a._id,

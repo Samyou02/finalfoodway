@@ -57,18 +57,25 @@ export const updateActiveStatus = async (req, res) => {
             })
 
             if (!busy) {
+                // Find ALL orders that are "out of delivery" (status: "brodcasted")
+                // regardless of whether this delivery boy was previously notified
                 const assignments = await DeliveryAssignment.find({
-                    status: 'brodcasted',
-                    brodcastedTo: { $nin: [user._id] }
+                    status: 'brodcasted'
                 }).populate('order').populate('shop')
 
                 const io = req.app.get('io')
                 for (const a of assignments) {
-                    a.brodcastedTo.push(user._id)
-                    await a.save()
+                    // Add delivery boy to brodcastedTo array if not already present
+                    if (!a.brodcastedTo.includes(user._id)) {
+                        a.brodcastedTo.push(user._id)
+                        await a.save()
+                    }
+                    
+                    // Send assignment notification regardless of previous notifications
                     if (io && user.socketId) {
                         const items = a.order.shopOrders.find(so => so._id.equals(a.shopOrderId))?.shopOrderItems || []
                         const subtotal = a.order.shopOrders.find(so => so._id.equals(a.shopOrderId))?.subtotal
+                        const receiptNumber = a.order.shopOrders.find(so => so._id.equals(a.shopOrderId))?.receipt?.receiptNumber || null
                         io.to(user.socketId).emit('newAssignment', {
                             sentTo: user._id,
                             assignmentId: a._id,
@@ -76,7 +83,8 @@ export const updateActiveStatus = async (req, res) => {
                             shopName: a.shop.name,
                             deliveryAddress: a.order.deliveryAddress,
                             items,
-                            subtotal
+                            subtotal,
+                            receiptNumber
                         })
                     }
                 }

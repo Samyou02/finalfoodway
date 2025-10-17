@@ -75,7 +75,8 @@ const userSlice = createSlice({
     totalAmount: initialCartState.totalAmount,
     myOrders: [],
     searchItems: null,
-    socket: null
+    socket: null,
+    cartClearedForNewShop: false
   },
   reducers: {
     setUserData: (state, action) => {
@@ -101,6 +102,19 @@ const userSlice = createSlice({
     },
     addToCart: (state, action) => {
       const cartItem = action.payload
+      
+      // Check if cart has items from a different shop
+      if (state.cartItems.length > 0) {
+        const existingShopId = state.cartItems[0].shop
+        if (existingShopId !== cartItem.shop) {
+          // Clear cart if adding item from different shop
+          state.cartItems = []
+          state.totalAmount = 0
+          // Set a flag to indicate cart was cleared due to different shop
+          state.cartClearedForNewShop = true
+        }
+      }
+      
       const existingItem = state.cartItems.find(i => i.id == cartItem.id)
       if (existingItem) {
         existingItem.quantity += cartItem.quantity
@@ -143,6 +157,7 @@ const userSlice = createSlice({
     clearCart: (state) => {
       state.cartItems = []
       state.totalAmount = 0
+      state.cartClearedForNewShop = false
       
       // Clear localStorage
       try {
@@ -151,6 +166,10 @@ const userSlice = createSlice({
       } catch (error) {
         console.error('Error clearing cart from localStorage:', error)
       }
+    },
+
+    clearCartNotification: (state) => {
+      state.cartClearedForNewShop = false
     },
 
     setMyOrders: (state, action) => {
@@ -317,5 +336,5 @@ const userSlice = createSlice({
   }
 })
 
-export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, clearCart, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, setSocket, updateRealtimeOrderStatus, saveOtpData, clearPersistedOtpData, logout } = userSlice.actions
+export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, clearCart, clearCartNotification, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, setSocket, updateRealtimeOrderStatus, saveOtpData, clearPersistedOtpData, logout } = userSlice.actions
 export default userSlice.reducer
