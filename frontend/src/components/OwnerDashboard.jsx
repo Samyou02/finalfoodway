@@ -5,9 +5,8 @@ import { FaUtensils, FaStore, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
 import { FaPen } from "react-icons/fa";
 import OwnerItemCard from './ownerItemCard';
-import axios from 'axios';
-import { serverUrl } from '../App';
 import { setMyShopData } from '../redux/ownerSlice';
+import { ratingAPI, shopAPI } from '../api';
 
 function OwnerDashboard() {
   const { myShopData } = useSelector(state => state.owner)
@@ -18,7 +17,7 @@ function OwnerDashboard() {
 
   const fetchRatings = async () => {
     try {
-      const res = await axios.get(`${serverUrl}/api/rating/shop/my`, { withCredentials: true })
+      const res = await ratingAPI.getMyShopRatings()
       setRatingSummary(res.data)
     } catch (error) {
       console.log('fetch owner ratings error', error)
@@ -33,7 +32,7 @@ function OwnerDashboard() {
   React.useEffect(() => {
     const refreshShop = async () => {
       try {
-        const res = await axios.get(`${serverUrl}/api/shop/get-my`, { withCredentials: true })
+        const res = await shopAPI.getMy()
         dispatch(setMyShopData(res.data))
       } catch (error) {
         // Non-blocking; shop might not exist yet for this owner
@@ -50,10 +49,7 @@ function OwnerDashboard() {
       setIsUpdatingStatus(true)
       const newStatus = !myShopData.isOpen
       
-      const result = await axios.put(`${serverUrl}/api/shop/update-status`, 
-        { isOpen: newStatus }, 
-        { withCredentials: true }
-      )
+      const result = await shopAPI.updateStatus(newStatus)
       
       // Update the shop data in Redux store
       dispatch(setMyShopData(result.data.shop))

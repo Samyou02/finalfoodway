@@ -4,9 +4,8 @@ import { IoIosSearch } from "react-icons/io";
 import { FiShoppingCart } from "react-icons/fi";
 import { useDispatch, useSelector } from 'react-redux';
 import { RxCross2 } from "react-icons/rx";
-import axios from 'axios';
-import { serverUrl } from '../App';
 import { setSearchItems, setUserData } from '../redux/userSlice';
+import { userAPI, authAPI, itemAPI } from '../api';
 import { FaPlus } from "react-icons/fa6";
 import { TbReceipt2 } from "react-icons/tb";
 import { useNavigate } from 'react-router-dom';
@@ -22,12 +21,12 @@ function Nav() {
     try {
             // Ensure delivery boys go inactive on logout
             try {
-                await axios.put(`${serverUrl}/api/user/set-active`, { isActive: false }, { withCredentials: true })
+                await userAPI.setActive(false)
             } catch (e) {
                 // Non-blocking: proceed to logout even if this fails
                 console.log('set-active on logout error:', e)
             }
-            await axios.get(`${serverUrl}/api/auth/signout`, { withCredentials: true })
+            await authAPI.signout()
             dispatch(setUserData(null))
             // Note: OTP data is NOT cleared on logout - it persists for 2 hours regardless of login/logout
     } catch (error) {
@@ -37,7 +36,7 @@ function Nav() {
 
     const handleSearchItems = useCallback(async () => {
       try {
-        const { data } = await axios.get(`${serverUrl}/api/item/search-items?query=${query}&city=${currentCity}`, { withCredentials: true })
+        const { data } = await itemAPI.searchItems(query, currentCity)
         dispatch(setSearchItems(data))
       } catch (error) {
         console.log(error)

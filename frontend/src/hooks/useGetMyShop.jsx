@@ -1,8 +1,7 @@
-import axios from 'axios'
-import React, { useEffect } from 'react'
-import { serverUrl } from '../App'
+import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setMyShopData } from '../redux/ownerSlice'
+import { shopAPI } from '../api'
 
 function useGetMyshop() {
     const dispatch = useDispatch()
@@ -11,7 +10,7 @@ function useGetMyshop() {
     useEffect(() => {
         const fetchShop = async () => {
             try {
-                const result = await axios.get(`${serverUrl}/api/shop/get-my`, { withCredentials: true })
+                const result = await shopAPI.getMy()
                 dispatch(setMyShopData(result.data))
             } catch (error) {
                 // Only log errors that are not expected (400 means no shop exists for user)

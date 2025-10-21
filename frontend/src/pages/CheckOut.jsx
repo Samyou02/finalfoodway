@@ -4,11 +4,10 @@ import { IoLocationSharp } from "react-icons/io5";
 import { useDispatch, useSelector } from 'react-redux';
 import { MdDeliveryDining } from "react-icons/md";
 import { FaCreditCard } from "react-icons/fa";
-import axios from 'axios';
 import { FaMobileScreenButton } from "react-icons/fa6";
 import { useNavigate } from 'react-router-dom';
-import { serverUrl } from '../App';
 import { addMyOrder, clearCart } from '../redux/userSlice';
+import { itemAPI, orderAPI } from '../api';
 
 function CheckOut() {
   const { cartItems ,totalAmount} = useSelector(state => state.user)
@@ -34,7 +33,7 @@ function CheckOut() {
         const firstItemShop = cartItems?.[0]?.shop
         const shopId = typeof firstItemShop === 'string' ? firstItemShop : firstItemShop?._id
         if (!shopId) return
-        const res = await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`, { withCredentials: true })
+        const res = await itemAPI.getByShop(shopId)
         const shop = res.data?.shop
         if (shop?.upiVpa) {
           setShopUpi({ vpa: shop.upiVpa, payeeName: shop.upiPayeeName || null })
@@ -75,7 +74,7 @@ function CheckOut() {
     }
     
     try {
-      const result=await axios.post(`${serverUrl}/api/order/place-order`,{
+      const result = await orderAPI.placeOrder({
         paymentMethod,
         orderType,
         deliveryAddress: orderType === "delivery" ? {
@@ -84,7 +83,7 @@ function CheckOut() {
         phoneNumber: phoneNumber.trim(),
         totalAmount:grandTotal,
         cartItems
-      },{withCredentials:true})
+      })
 
       if(paymentMethod=="cod"){
         dispatch(addMyOrder(result.data))
@@ -146,10 +145,10 @@ const openRazorpayWindow=(orderId,razorOrder)=>{
  order_id:razorOrder.id,
  handler:async function (response) {
   try {
-    const result=await axios.post(`${serverUrl}/api/order/verify-payment`,{
+    const result = await orderAPI.verifyPayment({
       razorpay_payment_id:response.razorpay_payment_id,
       orderId
-    },{withCredentials:true})
+    })
         dispatch(addMyOrder(result.data))
         dispatch(clearCart())
       navigate("/order-placed")

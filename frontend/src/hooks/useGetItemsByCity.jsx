@@ -1,8 +1,7 @@
-import axios from 'axios'
-import React, { useEffect } from 'react'
-import { serverUrl } from '../App'
+import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setItemsInMyCity } from '../redux/userSlice'
+import { itemAPI } from '../api'
 
 function useGetItemsByCity() {
     const dispatch=useDispatch()
@@ -13,7 +12,7 @@ function useGetItemsByCity() {
         return;
     }
   try {
-           const result=await axios.get(`${serverUrl}/api/item/get-by-city/${currentCity}`,{withCredentials:true})
+           const result=await itemAPI.getByCity(currentCity)
             dispatch(setItemsInMyCity(result.data))
    } catch {
         // Silently fail to avoid console noise

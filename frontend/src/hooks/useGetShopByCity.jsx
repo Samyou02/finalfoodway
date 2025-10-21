@@ -1,8 +1,7 @@
-import axios from 'axios'
-import React, { useEffect } from 'react'
-import { serverUrl } from '../App'
+import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setShopsInMyCity } from '../redux/userSlice'
+import { shopAPI } from '../api'
 
 function useGetShopByCity() {
     const dispatch = useDispatch()
@@ -12,7 +11,7 @@ function useGetShopByCity() {
         const fetchShops = async () => {
             try {
                 // Fetch all shops regardless of location
-                const result = await axios.get(`${serverUrl}/api/shop/get-all`, { withCredentials: true })
+                const result = await shopAPI.getAll()
                 dispatch(setShopsInMyCity(result.data))
             } catch {
                 // Silently ignore to avoid console noise

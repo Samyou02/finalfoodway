@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import { MdPhone, MdLocationOn } from 'react-icons/md'
-import axios from 'axios'
-import { serverUrl } from '../App'
 import { ClipLoader } from 'react-spinners'
+import { orderAPI } from '../api'
 import { useDispatch, useSelector } from 'react-redux'
 import { updateOrderStatus, setMyOrders } from '../redux/userSlice'
 
@@ -24,7 +23,7 @@ function DeliveryBoyOrderCard({ data, onOrderUpdate }) {
     const verifyOtp = async () => {
         setLoading(true)
         try {
-            const result = await axios.post(`${serverUrl}/api/order/verify-delivery-otp`, { orderId: data._id, shopOrderId: data.shopOrders._id, otp }, { withCredentials: true })
+            const result = await orderAPI.verifyDeliveryOtp(data._id, data.shopOrders._id, otp)
             setMessage(result.data.message)
             // Update the order status locally and notify parent component
             dispatch(updateOrderStatus({ orderId: data._id, status: 'delivered' }))
@@ -46,7 +45,7 @@ function DeliveryBoyOrderCard({ data, onOrderUpdate }) {
         }
         setIsDeleting(true)
         try {
-            await axios.delete(`${serverUrl}/api/order/delete-order/${data._id}`, { withCredentials: true })
+            await orderAPI.deleteOrder(data._id)
             const updatedOrders = myOrders.filter(order => order._id !== data._id)
             dispatch(setMyOrders(updatedOrders))
             alert('Order deleted successfully')

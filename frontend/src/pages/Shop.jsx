@@ -1,6 +1,5 @@
-import axios from 'axios'
 import React, { useCallback, useEffect, useState } from 'react'
-import { serverUrl } from '../App'
+import { itemAPI } from '../api'
 import { useNavigate, useParams } from 'react-router-dom'
 import { FaStore } from "react-icons/fa6";
 import { FaLocationDot } from "react-icons/fa6";
@@ -19,7 +18,7 @@ function Shop() {
     
     const handleShop = useCallback(async () => {
         try {
-           const result=await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`,{withCredentials:true}) 
+           const result = await itemAPI.getByShop(shopId)
            setShop(result.data.shop)
            setItems(result.data.items)
            setShopClosed(!result.data.shop.isOpen)

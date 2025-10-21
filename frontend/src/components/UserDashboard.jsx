@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Nav from './Nav.jsx'
-import { fetchCategories } from '../category'
+import { getCategories } from '../category'
 import CategoryCard from './CategoryCard'
 import { FaCircleChevronLeft } from "react-icons/fa6";
 import { FaCircleChevronRight } from "react-icons/fa6";
@@ -8,9 +8,8 @@ import { FaFilter } from "react-icons/fa";
 import { useSelector, useDispatch } from 'react-redux';
 import FoodCard from './FoodCard';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { serverUrl } from '../App';
 import { setItemsInMyCity, setShopsInMyCity } from '../redux/userSlice';
+import { itemAPI } from '../api';
 
 function UserDashboard() {
   const {currentCity,shopInMyCity,itemsInMyCity,searchItems,socket}=useSelector(state=>state.user)
@@ -74,10 +73,7 @@ const fetchItems = useCallback(async () => {
       params.append('foodType', filterFoodType)
     }
     
-    const queryString = params.toString()
-    const url = `${serverUrl}/api/item/get-by-city/${currentCity}${queryString ? `?${queryString}` : ''}`
-    
-    const result = await axios.get(url, { withCredentials: true })
+    const result = await itemAPI.getByCity(currentCity, params)
     dispatch(setItemsInMyCity(result.data))
   } catch (error) {
     console.log('Error fetching items:', error)
@@ -168,7 +164,7 @@ useEffect(() => {
 useEffect(() => {
   const loadCategories = async () => {
     try {
-      const serverCategories = await fetchCategories();
+      const serverCategories = await getCategories();
       // Add "All" category at the beginning and merge with API categories
       const allCategory = { name: "All", _id: "all", image: null };
       setDynamicCategories([allCategory, ...serverCategories]);

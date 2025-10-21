@@ -1,8 +1,7 @@
-import axios from 'axios'
-import React, { useEffect } from 'react'
-import { serverUrl } from '../App'
+import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { setUserData } from '../redux/userSlice'
+import { userAPI } from '../api'
 
 function useGetCurrentUser() {
     const dispatch = useDispatch()
@@ -10,11 +9,7 @@ function useGetCurrentUser() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const result = await axios.get(`${serverUrl}/api/user/current`, {
-                    withCredentials: true,
-                    // Treat all statuses as resolved to avoid console errors for 401/403
-                    validateStatus: () => true
-                })
+                const result = await userAPI.getCurrentUser()
                 if (result.status === 200) {
                     dispatch(setUserData(result.data))
                 } else if ([401, 403].includes(result.status)) {

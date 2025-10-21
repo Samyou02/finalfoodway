@@ -4,8 +4,7 @@ import { FaRegEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from 'react-router-dom';
-import axios from "axios"
-import { serverUrl } from '../App';
+import { authAPI } from '../api';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { ClipLoader } from "react-spinners"
@@ -32,7 +31,7 @@ function SignUp() {
     useEffect(() => {
         const fetchUserTypes = async () => {
             try {
-                const response = await axios.get(`${serverUrl}/api/auth/user-types`);
+                const response = await authAPI.getUserTypes();
                 setUserTypes(response.data);
                 if (response.data.length > 0) {
                     setUserType(response.data[0].name); // Set first user type as default
@@ -47,9 +46,9 @@ function SignUp() {
      const handleSignUp=async () => {
         setLoading(true)
         try {
-            const result=await axios.post(`${serverUrl}/api/auth/signup`,{
+            const result=await authAPI.signup({
                 fullName,email,password,mobile,role,userType: role === "user" ? userType : undefined
-            },{withCredentials:true})
+            })
             // If backend indicates pending approval, do not log in
             if (result.data && result.data.pendingApproval) {
                 setErr("Account created. Pending superadmin approval.")
@@ -76,13 +75,13 @@ function SignUp() {
             const provider=new GoogleAuthProvider()
             const result=await signInWithPopup(auth,provider)
             
-            const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
+            const {data}=await authAPI.googleAuth({
                 fullName:result.user.displayName,
                 email:result.user.email,
                 role,
                 mobile,
                 userType: role === "user" ? userType : undefined
-            },{withCredentials:true})
+            })
             if (data && data.pendingApproval) {
                 setErr("Account created. Pending superadmin approval.")
                 setLoading(false)

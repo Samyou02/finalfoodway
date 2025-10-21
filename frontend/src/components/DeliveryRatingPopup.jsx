@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
-import axios from 'axios'
-import { serverUrl } from '../App'
+import { ratingAPI } from '../api'
 
 // Bottom popup prompting user to rate delivery boy post-delivery
 function DeliveryRatingPopup() {
@@ -43,7 +42,7 @@ function DeliveryRatingPopup() {
 
       try {
         // Check if already rated to avoid showing popup
-        const res = await axios.get(`${serverUrl}/api/rating/order/${latestEligible.orderId}`, { withCredentials: true })
+        const res = await ratingAPI.getOrderRating(latestEligible.orderId)
         const ratedStars = res?.data?.map?.[`${latestEligible.shopOrderId}-deliveryBoy`]
         if (ratedStars) {
           localStorage.removeItem(key)
@@ -75,13 +74,13 @@ function DeliveryRatingPopup() {
     if (!candidate) return
     setLoading(true)
     try {
-      await axios.post(`${serverUrl}/api/rating/submit`, {
+      await ratingAPI.submit({
         orderId: candidate.orderId,
         shopOrderId: candidate.shopOrderId,
         type: 'deliveryBoy',
         targetId: candidate.deliveryBoyId,
         stars
-      }, { withCredentials: true })
+      })
     } catch {
       // Non-blocking; still hide popup
     } finally {

@@ -1,7 +1,6 @@
-import axios from 'axios'
-import React, { useEffect, useRef } from 'react'
-import { serverUrl } from '../App'
+import { useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
+import { userAPI } from '../api'
 
 function useUpdateLocation() {
     const {userData}=useSelector(state=>state.user)
@@ -11,7 +10,7 @@ function useUpdateLocation() {
     useEffect(()=>{
 const updateLocation=async (lat,lon) => {
     try {
-        await axios.post(`${serverUrl}/api/user/update-location`,{lat,lon},{withCredentials:true})
+        await userAPI.updateLocation(lat, lon)
     } catch (error) {
         // Only log errors that are not authentication-related (401/403)
         if (error.response && ![401, 403].includes(error.response.status)) {

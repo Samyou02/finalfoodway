@@ -1,9 +1,8 @@
-import axios from 'axios';
 import React from 'react'
 import { MdPhone } from "react-icons/md";
-import { serverUrl } from '../App';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateOrderStatus, setMyOrders } from '../redux/userSlice';
+import { orderAPI } from '../api';
 import { useState } from 'react';
 import { useEffect } from 'react';
 function OwnerOrderCard({ data }) {
@@ -19,12 +18,12 @@ function OwnerOrderCard({ data }) {
     
     const handleUpdateStatus=async (orderId,shopId,status) => {
         try {
-            const result=await axios.post(`${serverUrl}/api/order/update-status/${orderId}/${shopId}`,{status},{withCredentials:true})
+            const result=await orderAPI.updateStatus(orderId, shopId, status)
              dispatch(updateOrderStatus({orderId,shopId,status}))
              setAvailableBoys(result.data.availableBoys)
              // Refresh orders for key status changes
              if(['confirmed','preparing','out of delivery','delivered'].includes(status)){
-                const res = await axios.get(`${serverUrl}/api/order/my-orders`,{withCredentials:true})
+                const res = await orderAPI.getMyOrders()
                 dispatch(setMyOrders(res.data))
              }
         } catch {
@@ -38,7 +37,7 @@ function OwnerOrderCard({ data }) {
         }
         setIsDeleting(true)
         try {
-            await axios.delete(`${serverUrl}/api/order/delete-order/${data._id}`, { withCredentials: true })
+            await orderAPI.deleteOrder(data._id)
             const updatedOrders = myOrders.filter(order => order._id !== data._id)
             dispatch(setMyOrders(updatedOrders))
             alert('Order deleted successfully')

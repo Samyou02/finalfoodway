@@ -1,11 +1,10 @@
-import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { serverUrl } from '../App'
 import { useDispatch } from 'react-redux'
 import { setMyOrders } from '../redux/userSlice'
 import { useSelector } from 'react-redux'
 import { ClipLoader } from 'react-spinners'
+import { ratingAPI, orderAPI } from '../api'
 
 function UserOrderCard({ data }) {
     const navigate = useNavigate()
@@ -33,7 +32,7 @@ function UserOrderCard({ data }) {
     useEffect(() => {
         const fetchExistingRatings = async () => {
             try {
-                const res = await axios.get(`${serverUrl}/api/rating/order/${data._id}`, { withCredentials: true })
+                const res = await ratingAPI.getOrderRatings(data._id)
                 if (res.data?.map) {
                     setEntityRatings(res.data.map)
                 }
@@ -47,13 +46,13 @@ function UserOrderCard({ data }) {
 
     const handleItemRating = async (shopOrder, itemId, stars) => {
         try {
-            await axios.post(`${serverUrl}/api/rating/submit`, {
+            await ratingAPI.submitRating({
                 orderId: data._id,
                 shopOrderId: shopOrder._id,
                 type: 'item',
                 targetId: itemId,
                 stars
-            }, { withCredentials: true })
+            })
             setEntityRatings(prev => ({ ...prev, [`${itemId}-item`]: stars }))
         } catch (error) {
             console.log('submit item rating error', error?.response?.data || error)
@@ -64,13 +63,13 @@ function UserOrderCard({ data }) {
         try {
             const targetId = type === 'shop' ? shopOrder.shop._id : shopOrder.assignedDeliveryBoy?._id
             if (!targetId) return
-            await axios.post(`${serverUrl}/api/rating/submit`, {
+            await ratingAPI.submitRating({
                 orderId: data._id,
                 shopOrderId: shopOrder._id,
                 type,
                 targetId,
                 stars
-            }, { withCredentials: true })
+            })
             setEntityRatings(prev => ({ ...prev, [`${shopOrder._id}-${type}`]: stars }))
         } catch (error) {
             console.log('submit rating error', error?.response?.data || error)
@@ -83,7 +82,7 @@ function UserOrderCard({ data }) {
         }
         setIsDeleting(true)
         try {
-            await axios.delete(`${serverUrl}/api/order/delete-order/${data._id}`, { withCredentials: true })
+            await orderAPI.deleteOrder(data._id)
             const updatedOrders = myOrders.filter(order => order._id !== data._id)
             dispatch(setMyOrders(updatedOrders))
             alert('Order deleted successfully')
@@ -102,7 +101,7 @@ function UserOrderCard({ data }) {
         
         setIsCancelling(true)
         try {
-            await axios.post(`${serverUrl}/api/order/cancel-order/${data._id}`, { reason: 'User cancelled' }, { withCredentials: true })
+            await orderAPI.cancelOrder(data._id, 'User cancelled')
             // Update the order status in local state
             const updatedOrders = myOrders.map(order => {
                 if (order._id === data._id) {
@@ -130,10 +129,7 @@ function UserOrderCard({ data }) {
 
     const handleUpdateSpecialInstructions = async () => {
         try {
-            await axios.put(`${serverUrl}/api/order/update-special-instructions/${data._id}`, 
-                { specialInstructions }, 
-                { withCredentials: true }
-            )
+            await orderAPI.updateSpecialInstructions(data._id, specialInstructions)
             
             // Update the order in local state
             const updatedOrders = myOrders.map(order => {
@@ -158,10 +154,7 @@ function UserOrderCard({ data }) {
         setOtpMessage("")
         setOtpLoading(true)
         try {
-            const result = await axios.post(`${serverUrl}/api/order/send-delivery-otp`, {
-                orderId: data._id,
-                shopOrderId
-            }, { withCredentials: true })
+            const result = await orderAPI.sendDeliveryOtp(data._id, shopOrderId)
             if (result.data.isExisting) {
                 setOtpMessage('Existing OTP resent successfully.')
             } else {

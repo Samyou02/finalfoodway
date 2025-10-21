@@ -1,7 +1,6 @@
-import axios from 'axios'
 import React, { useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { serverUrl } from '../App'
+import { orderAPI } from '../api'
 import { useEffect } from 'react'
 import { useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
@@ -14,7 +13,7 @@ function TrackOrderPage() {
     
     const handleGetOrder = useCallback(async () => {
         try {
-            const result = await axios.get(`${serverUrl}/api/order/get-order-by-id/${orderId}`, { withCredentials: true })
+            const result = await orderAPI.getOrderById(orderId)
             setCurrentOrder(result.data)
         } catch (error) {
             console.log(error)

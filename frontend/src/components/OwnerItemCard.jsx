@@ -1,11 +1,10 @@
-import axios from 'axios';
 import React, { useState } from 'react'
 import { FaPen } from "react-icons/fa";
 import { FaTrashAlt } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
-import { serverUrl } from '../App';
 import { useDispatch } from 'react-redux';
 import { setMyShopData } from '../redux/ownerSlice';
+import { itemAPI, shopAPI } from '../api';
 function OwnerItemCard({data}) {
     const navigate=useNavigate()
     const dispatch=useDispatch()
@@ -14,7 +13,7 @@ function OwnerItemCard({data}) {
 
     const handleDelete=async () => {
       try {
-        const result=await axios.get(`${serverUrl}/api/item/delete/${data._id}`,{withCredentials:true})
+        const result = await itemAPI.deleteItem(data._id)
         dispatch(setMyShopData(result.data))
       } catch (error) {
         console.log(error)
@@ -24,13 +23,10 @@ function OwnerItemCard({data}) {
     const handleStockStatusChange = async (newStatus) => {
       try {
         setIsUpdatingStock(true)
-        await axios.put(`${serverUrl}/api/item/update-stock/${data._id}`, 
-          { stockStatus: newStatus }, 
-          { withCredentials: true }
-        )
+        await itemAPI.updateStock(data._id, newStatus)
         setStockStatus(newStatus)
         // Update the shop data to reflect the change
-        const updatedShopData = await axios.get(`${serverUrl}/api/owner/my-shop`, { withCredentials: true })
+        const updatedShopData = await shopAPI.getMy()
         dispatch(setMyShopData(updatedShopData.data))
       } catch (error) {
         console.log('Error updating stock status:', error)

@@ -1,8 +1,7 @@
-import axios from 'axios'
-import React, { useEffect, useRef } from 'react'
-import { serverUrl } from '../App'
+import { useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setMyOrders } from '../redux/userSlice'
+import { orderAPI } from '../api'
 
 function useGetMyOrders() {
     const dispatch = useDispatch()
@@ -24,7 +23,7 @@ function useGetMyOrders() {
         
         const fetchOrders = async () => {
             try {
-                const result = await axios.get(`${serverUrl}/api/order/my-orders`, { withCredentials: true })
+                const result = await orderAPI.getMyOrders()
                 
                 // Check if component is still mounted and request wasn't cancelled
                 if (!isCancelled) {

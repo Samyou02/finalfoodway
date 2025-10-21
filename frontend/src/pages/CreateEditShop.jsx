@@ -4,10 +4,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaUtensils } from "react-icons/fa";
 import { useState } from 'react';
-import axios from 'axios';
-import { serverUrl } from '../App';
 import { setMyShopData } from '../redux/ownerSlice';
 import { ClipLoader } from 'react-spinners';
+import { shopAPI } from '../api';
 function CreateEditShop() {
     const navigate = useNavigate()
     const { myShopData } = useSelector(state => state.owner)
@@ -44,7 +43,7 @@ function CreateEditShop() {
            // Append UPI fields
            if (upiVpa) formData.append("upiVpa", upiVpa)
            if (upiPayeeName) formData.append("upiPayeeName", upiPayeeName)
-           const result=await axios.post(`${serverUrl}/api/shop/create-edit`,formData,{withCredentials:true})
+           const result = await shopAPI.createEdit(formData)
            dispatch(setMyShopData(result.data))
           setLoading(false)
           navigate("/")

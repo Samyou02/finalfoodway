@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout } from '../redux/userSlice';
-import { serverUrl } from '../App';
+import { authAPI, superAdminAPI } from '../api';
 
 const SuperAdminDashboard = () => {
     const navigate = useNavigate();
@@ -43,9 +42,7 @@ const SuperAdminDashboard = () => {
     const [userTypes, setUserTypes] = useState([]);
     const [newUserType, setNewUserType] = useState({ name: '', description: '', deliveryAllowed: false });
 
-    // Set axios defaults aligned with serverUrl
-    axios.defaults.baseURL = serverUrl;
-    axios.defaults.withCredentials = true;
+
 
     // Effects moved below to avoid referencing callbacks before initialization
 
@@ -65,7 +62,7 @@ const SuperAdminDashboard = () => {
 
     const handleLogout = async () => {
         try {
-            await axios.get('/api/auth/signout');
+            await authAPI.signout();
             dispatch(logout());
             navigate('/signin');
         } catch (error) {
@@ -78,7 +75,7 @@ const SuperAdminDashboard = () => {
     const fetchDashboardStats = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await axios.get('/api/superadmin/dashboard-stats');
+            const response = await superAdminAPI.getDashboardStats();
             setDashboardStats(response.data);
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
@@ -92,7 +89,7 @@ const SuperAdminDashboard = () => {
     const fetchPendingDeliveryBoys = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await axios.get('/api/superadmin/pending-deliveryboys');
+            const response = await superAdminAPI.getPendingDeliveryBoys();
             setPendingDeliveryBoys(response.data);
         } catch (error) {
             console.error('Error fetching pending delivery boys:', error);
@@ -106,7 +103,7 @@ const SuperAdminDashboard = () => {
     const fetchPendingOwners = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await axios.get('/api/superadmin/pending-owners');
+            const response = await superAdminAPI.getPendingOwners();
             setPendingOwners(response.data);
         } catch (error) {
             console.error('Error fetching pending owners:', error);
@@ -120,7 +117,7 @@ const SuperAdminDashboard = () => {
     const updateDeliveryBoyStatus = async (userId, action) => {
         try {
             setLoading(true);
-            await axios.post('/api/superadmin/update-deliveryboy-status', { userId, action });
+            await superAdminAPI.updateDeliveryBoyStatus(userId, action);
             showMessage(`Delivery boy ${action}d successfully`);
             fetchPendingDeliveryBoys(); // Refresh the list
             fetchDashboardStats(); // Refresh stats
@@ -136,7 +133,7 @@ const SuperAdminDashboard = () => {
     const updateOwnerStatus = async (userId, action) => {
         try {
             setLoading(true);
-            await axios.post('/api/superadmin/update-owner-status', { userId, action });
+            await superAdminAPI.updateOwnerStatus(userId, action);
             showMessage(`Owner ${action}d successfully`);
             fetchPendingOwners(); // Refresh the list
             fetchDashboardStats(); // Refresh stats
@@ -152,7 +149,7 @@ const SuperAdminDashboard = () => {
     const fetchCategories = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await axios.get('/api/superadmin/categories');
+            const response = await superAdminAPI.getCategories();
             setCategories(response.data);
         } catch (error) {
             console.error('Error fetching categories:', error);
@@ -178,11 +175,7 @@ const SuperAdminDashboard = () => {
                 formData.append('image', newCategory.image);
             }
             
-            await axios.post('/api/superadmin/categories', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            await superAdminAPI.createCategory(formData);
             showMessage('Category created successfully');
             setNewCategory({ name: '', description: '', image: null });
             setCategoryImagePreview(null);
@@ -203,7 +196,7 @@ const SuperAdminDashboard = () => {
 
         try {
             setLoading(true);
-            await axios.delete(`/api/superadmin/categories/${categoryId}`);
+            await superAdminAPI.deleteCategory(categoryId);
             showMessage('Category deleted successfully');
             fetchCategories(); // Refresh the list
             fetchDashboardStats(); // Refresh stats
@@ -249,11 +242,7 @@ const SuperAdminDashboard = () => {
                 formData.append('image', editCategoryData.image);
             }
             
-            await axios.put(`/api/superadmin/categories/${categoryId}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            await superAdminAPI.updateCategory(categoryId, formData);
             showMessage('Category updated successfully');
             setEditingCategory(null);
             setEditCategoryData({ name: '', description: '', image: null });
@@ -277,7 +266,7 @@ const SuperAdminDashboard = () => {
             if (searchRole !== 'all') params.append('role', searchRole);
             if (searchTerm.trim()) params.append('search', searchTerm.trim());
             
-            const response = await axios.get(`/api/superadmin/users?${params.toString()}`);
+            const response = await superAdminAPI.getUsers(params);
             setUsers(response.data);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -291,7 +280,7 @@ const SuperAdminDashboard = () => {
     const fetchUserTypes = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await axios.get('/api/superadmin/user-types');
+            const response = await superAdminAPI.getUserTypes();
             setUserTypes(response.data);
         } catch (error) {
             console.error('Error fetching user types:', error);
@@ -342,7 +331,7 @@ const SuperAdminDashboard = () => {
 
         try {
             setLoading(true);
-            await axios.post('/api/superadmin/user-types', newUserType);
+            await superAdminAPI.createUserType(newUserType);
             showMessage('User type created successfully');
             setNewUserType({ name: '', description: '', deliveryAllowed: false });
             fetchUserTypes(); // Refresh the list
@@ -358,7 +347,7 @@ const SuperAdminDashboard = () => {
     const updateUserTypeDelivery = async (userTypeId, deliveryAllowed) => {
         try {
             setLoading(true);
-            await axios.put(`/api/superadmin/user-types/${userTypeId}/delivery`, { deliveryAllowed });
+            await superAdminAPI.updateUserTypeDelivery(userTypeId, deliveryAllowed);
             showMessage(`Delivery ${deliveryAllowed ? 'enabled' : 'disabled'} successfully`);
             fetchUserTypes(); // Refresh the list
         } catch (error) {
@@ -375,7 +364,7 @@ const SuperAdminDashboard = () => {
 
         try {
             setLoading(true);
-            await axios.delete(`/api/superadmin/user-types/${userTypeId}`);
+            await superAdminAPI.deleteUserType(userTypeId);
             showMessage('User type deleted successfully');
             fetchUserTypes(); // Refresh the list
         } catch (error) {

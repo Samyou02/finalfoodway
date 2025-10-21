@@ -4,11 +4,10 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaUtensils } from "react-icons/fa";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { serverUrl } from '../App';
 import { setMyShopData } from '../redux/ownerSlice';
 import { ClipLoader } from 'react-spinners';
-import { fetchCategories, categories } from '../category';
+import { getCategories, categories } from '../category';
+import { itemAPI } from '../api';
 
 function AddItem() {
     const navigate = useNavigate()
@@ -28,7 +27,7 @@ function AddItem() {
     useEffect(() => {
         const loadCategories = async () => {
             try {
-                const serverCategories = await fetchCategories();
+                const serverCategories = await getCategories();
                 setDynamicCategories(serverCategories);
                 // Set first category as default if available
                 if (serverCategories.length > 0 && !category) {
@@ -81,7 +80,7 @@ function AddItem() {
             if (backendImage) {
                 formData.append("image", backendImage)
             }
-            const result = await axios.post(`${serverUrl}/api/item/add-item`, formData, { withCredentials: true })
+            const result = await itemAPI.addItem(formData)
             dispatch(setMyShopData(result.data))
             setSuccess("Item added successfully!")
             setLoading(false)

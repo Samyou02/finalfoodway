@@ -4,11 +4,10 @@ import { useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaUtensils } from "react-icons/fa";
 import { useState } from 'react';
-import axios from 'axios';
-import { serverUrl } from '../App';
 import { setMyShopData } from '../redux/ownerSlice';
+import { itemAPI } from '../api';
 import { ClipLoader } from 'react-spinners';
-import { fetchCategories } from '../category';
+import { getCategories } from '../category';
 
 function EditItem() {
     const navigate = useNavigate()
@@ -42,7 +41,7 @@ function EditItem() {
             if (backendImage) {
                 formData.append("image", backendImage)
             }
-            const result = await axios.post(`${serverUrl}/api/item/edit-item/${itemId}`, formData, { withCredentials: true })
+            const result = await itemAPI.editItem(itemId, formData)
             dispatch(setMyShopData(result.data))
             setLoading(false)
             navigate("/")
@@ -55,7 +54,7 @@ function EditItem() {
     useEffect(()=>{
   const handleGetItemById=async () => {
     try {
-       const result=await axios.get(`${serverUrl}/api/item/get-by-id/${itemId}`,{withCredentials:true}) 
+       const result=await itemAPI.getById(itemId) 
        setCurrentItem(result.data)
 
     } catch (error) {
@@ -69,7 +68,7 @@ function EditItem() {
     useEffect(() => {
         const loadCategories = async () => {
             try {
-                const serverCategories = await fetchCategories();
+                const serverCategories = await getCategories();
                 setDynamicCategories(serverCategories);
             } catch (error) {
                 console.error('Error fetching categories:', error);

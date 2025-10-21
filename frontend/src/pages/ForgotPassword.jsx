@@ -1,8 +1,7 @@
-import axios from 'axios';
 import React, { useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
-import { serverUrl } from '../App';
+import { authAPI } from '../api';
 import { ClipLoader } from 'react-spinners';
 function ForgotPassword() {
   const [step, setStep] = useState(1)
@@ -16,7 +15,7 @@ const [loading,setLoading]=useState(false)
   const handleSendOtp=async () => {
     setLoading(true)
     try {
-      const result=await axios.post(`${serverUrl}/api/auth/send-otp`,{email},{withCredentials:true})
+      const result=await authAPI.sendOtp(email)
       console.log(result)
       setErr("")
       setStep(2)
@@ -29,7 +28,7 @@ const [loading,setLoading]=useState(false)
   const handleVerifyOtp=async () => {
       setLoading(true)
     try {
-      const result=await axios.post(`${serverUrl}/api/auth/verify-otp`,{email,otp},{withCredentials:true})
+      const result=await authAPI.verifyOtp(email, otp)
       console.log(result)
       setErr("")
       setStep(3)
@@ -45,7 +44,7 @@ const [loading,setLoading]=useState(false)
     }
     setLoading(true)
     try {
-      const result=await axios.post(`${serverUrl}/api/auth/reset-password`,{email,newPassword},{withCredentials:true})
+      const result=await authAPI.resetPassword(email, newPassword)
       setErr("")
       console.log(result)
         setLoading(false)

@@ -1,9 +1,8 @@
 import React from 'react'
 import Nav from './Nav'
 import { useDispatch, useSelector } from 'react-redux'
-import axios from 'axios'
-import { serverUrl } from '../App'
 import { setUserData } from '../redux/userSlice'
+import { orderAPI, userAPI, itemAPI, ratingAPI } from '../api'
 import { useEffect } from 'react'
 import { useState } from 'react'
 
@@ -36,7 +35,7 @@ const [loading,setLoading]=useState(false)
 
   const getAssignments=async () => {
     try {
-      const result=await axios.get(`${serverUrl}/api/order/get-assignments`,{withCredentials:true})
+      const result=await orderAPI.getAssignments()
       
       setAvailableAssignments(result.data)
     } catch (error) {
@@ -48,7 +47,7 @@ const [loading,setLoading]=useState(false)
     try {
       setLoading(true)
       const newActive = !isActive
-      await axios.put(`${serverUrl}/api/user/set-active`, { isActive: newActive }, { withCredentials: true })
+      await userAPI.setActive(newActive)
       setIsActive(newActive)
       // Update userData in store minimally without changing other code
       dispatch(setUserData({ ...userData, isActive: newActive }))
@@ -62,7 +61,7 @@ const [loading,setLoading]=useState(false)
   }
   const getCurrentOrders=async () => {
     try {
-      const { data } = await axios.get(`${serverUrl}/api/order/get-current-orders`,{withCredentials:true})
+      const { data } = await orderAPI.getCurrentOrders()
       setCurrentOrders(Array.isArray(data) ? data : [])
     } catch (error) {
       console.log(error)
@@ -72,7 +71,7 @@ const [loading,setLoading]=useState(false)
 
   const acceptOrder=async (assignmentId) => {
     try {
-      await axios.get(`${serverUrl}/api/order/accept-order/${assignmentId}`,{withCredentials:true})
+      await orderAPI.acceptOrder(assignmentId)
       
       // Immediately remove the accepted order from available assignments
       setAvailableAssignments(prev => prev.filter(assignment => assignment.assignmentId !== assignmentId))
@@ -121,7 +120,7 @@ const [loading,setLoading]=useState(false)
           const rawShop = so.shop
           const shopId = typeof rawShop === 'string' ? rawShop : rawShop?._id
           if (!shopId) continue
-          const res = await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`, { withCredentials: true })
+          const res = await itemAPI.getByShop(shopId)
           const shop = res.data?.shop
           const vpa = shop?.upiVpa || null
           const pn = shop?.upiPayeeName || shop?.name || 'FoodWay'
@@ -151,7 +150,7 @@ const [loading,setLoading]=useState(false)
    const handleTodayDeliveries=async () => {
     
     try {
-      const result=await axios.get(`${serverUrl}/api/order/get-today-deliveries`,{withCredentials:true})
+      const result=await orderAPI.getTodayDeliveries()
     console.log(result.data)
    setTodayDeliveries(result.data)
     } catch (error) {
@@ -164,7 +163,7 @@ const [loading,setLoading]=useState(false)
     // Fetch rating summary for delivery boy
     (async()=>{
       try{
-        const res=await axios.get(`${serverUrl}/api/rating/delivery/my`,{withCredentials:true})
+        const res=await ratingAPI.getMyDeliveryRatings()
         setRatingSummary(res.data?.summary || { average:0, count:0 })
         setDeliveryRatings(res.data?.ratings || [])
       }catch(err){
@@ -330,7 +329,7 @@ availableAssignments.map((a,index)=>(
             <button className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all" onClick={async () => {
               try {
                 setLoading(true)
-                const res = await axios.post(`${serverUrl}/api/order/verify-delivery-otp`, { orderId: co.orderId, shopOrderId: co.shopOrder._id, otp: otpValues[key] }, { withCredentials: true })
+                const res = await orderAPI.verifyDeliveryOtp(co.orderId, co.shopOrder._id, otpValues[key])
                 setMessages(prev => ({ ...prev, [key]: res.data.message }))
                 // Remove from current orders on success
                 setCurrentOrders(prev => prev.filter(o => `${o.orderId}-${o.shopOrder._id}` !== key))
