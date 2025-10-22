@@ -23,24 +23,30 @@ const server=http.createServer(app)
 
 // CORS Configuration for production and development
 const envAllowed = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean)
+
+// Always include development origins for local development
+const developmentOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:5180",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:5175",
+  "http://127.0.0.1:5180"
+]
+
+const productionOrigins = [
+  "https://finalfoodway.vercel.app",
+  "https://finalfoodway.onrender.com"
+]
+
+// Combine all allowed origins
 const defaultAllowed = process.env.NODE_ENV === 'production' 
-  ? [
-      "https://finalfoodway.vercel.app",
-      "https://finalfoodway.onrender.com"
-    ] // Production allowed origins
-  : [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:5175",
-      "http://localhost:5180",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174",
-      "http://127.0.0.1:5175",
-      "http://127.0.0.1:5180",
-      "https://finalfoodway.vercel.app",
-      "https://finalfoodway.onrender.com"
-    ]
-const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowed
+  ? [...productionOrigins, ...developmentOrigins] // Allow both in production for flexibility
+  : [...developmentOrigins, ...productionOrigins] // Allow both in development
+
+const allowedOrigins = envAllowed.length ? [...envAllowed, ...developmentOrigins] : defaultAllowed
 const io=new Server(server,{
    cors:{
     origin: allowedOrigins,
@@ -70,10 +76,22 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true)
-    if (allowedOrigins.includes(origin) || isLocalDev(origin)) {
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true)
     }
-    return callback(new Error('Not allowed by CORS'))
+    
+    // Check if it's a local development URL
+    if (isLocalDev(origin)) {
+      return callback(null, true)
+    }
+    
+    // Log the rejected origin for debugging
+    console.log(`CORS: Rejected origin: ${origin}`)
+    console.log(`CORS: Allowed origins:`, allowedOrigins)
+    
+    return callback(new Error(`Not allowed by CORS: ${origin}`))
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
