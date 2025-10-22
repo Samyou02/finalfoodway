@@ -24,7 +24,10 @@ const server=http.createServer(app)
 // CORS Configuration for production and development
 const envAllowed = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean)
 const defaultAllowed = process.env.NODE_ENV === 'production' 
-  ? [] // In production, only allow explicitly set origins
+  ? [
+      "https://finalfoodway.vercel.app",
+      "https://finalfoodway.onrender.com"
+    ] // Production allowed origins
   : [
       "http://localhost:5173",
       "http://localhost:5174",
@@ -35,6 +38,7 @@ const defaultAllowed = process.env.NODE_ENV === 'production'
       "http://127.0.0.1:5175",
       "http://127.0.0.1:5180",
       "https://finalfoodway.vercel.app",
+      "https://finalfoodway.onrender.com"
     ]
 const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowed
 const io=new Server(server,{
