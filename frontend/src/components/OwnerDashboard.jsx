@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import Nav from './NaV.JSX'
+import Nav from './Nav'
 import { useSelector, useDispatch } from 'react-redux'
 import { FaUtensils, FaStore, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
 import { FaPen } from "react-icons/fa";
-import OwnerItemCard from './ownerItemCard';
+import OwnerItemCard from './OwnerItemCard';
 import { setMyShopData } from '../redux/ownerSlice';
 import { ratingAPI, shopAPI } from '../api';
 
