@@ -21,32 +21,37 @@ import { autoRegenerateOtps } from "./controllers/order.controllers.js"
 const app=express()
 const server=http.createServer(app)
 
-// CORS Configuration for production and development
+// Comprehensive CORS Configuration
 const envAllowed = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean)
 
-// Always include development origins for local development
+// Development origins - all possible local development URLs
 const developmentOrigins = [
+  "http://localhost:3000",
   "http://localhost:5173",
-  "http://localhost:5174",
+  "http://localhost:5174", 
   "http://localhost:5175",
   "http://localhost:5180",
+  "http://127.0.0.1:3000",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:5174",
   "http://127.0.0.1:5175",
   "http://127.0.0.1:5180"
 ]
 
+// Production origins - all deployment URLs
 const productionOrigins = [
   "https://finalfoodway.vercel.app",
-  "https://finalfoodway.onrender.com"
+  "https://finalfoodway.onrender.com",
+  "https://www.finalfoodway.vercel.app",
+  "https://finalfoodway-git-main.vercel.app",
+  "https://finalfoodway-git-master.vercel.app"
 ]
 
-// Combine all allowed origins
-const defaultAllowed = process.env.NODE_ENV === 'production' 
-  ? [...productionOrigins, ...developmentOrigins] // Allow both in production for flexibility
-  : [...developmentOrigins, ...productionOrigins] // Allow both in development
+// Combine all origins - always allow both development and production
+const allAllowedOrigins = [...developmentOrigins, ...productionOrigins, ...envAllowed]
 
-const allowedOrigins = envAllowed.length ? [...envAllowed, ...developmentOrigins] : defaultAllowed
+// Remove duplicates and filter out empty strings
+const allowedOrigins = [...new Set(allAllowedOrigins)].filter(Boolean)
 const io=new Server(server,{
    cors:{
     origin: allowedOrigins,
@@ -64,9 +69,30 @@ app.use((req, res, next) => {
 })
 
 const port=process.env.PORT || 5000
-const isLocalDev = (o) => {
+// Enhanced local development detection
+const isLocalDev = (origin) => {
+  if (!origin) return false
   try {
-    return /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(o)
+    const url = new URL(origin)
+    const hostname = url.hostname
+    const port = url.port
+    
+    // Check for localhost, 127.0.0.1, and common development patterns
+    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0'
+    const isValidPort = port && parseInt(port) >= 3000 && parseInt(port) <= 9999
+    
+    return isLocalHost && (isValidPort || !port)
+  } catch {
+    return false
+  }
+}
+
+// Enhanced Vercel deployment detection
+const isVercelDeployment = (origin) => {
+  if (!origin) return false
+  try {
+    const url = new URL(origin)
+    return url.hostname.includes('vercel.app') || url.hostname.includes('finalfoodway')
   } catch {
     return false
   }
@@ -74,24 +100,35 @@ const isLocalDev = (o) => {
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true)
+    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
+    if (!origin) {
+      console.log('CORS: Allowing request with no origin (mobile app/curl)')
+      return callback(null, true)
+    }
     
-    // Check if origin is in allowed list
+    // Check if origin is in our explicit allowed list
     if (allowedOrigins.includes(origin)) {
+      console.log(`CORS: Allowing explicitly listed origin: ${origin}`)
       return callback(null, true)
     }
     
     // Check if it's a local development URL
     if (isLocalDev(origin)) {
+      console.log(`CORS: Allowing local development origin: ${origin}`)
+      return callback(null, true)
+    }
+    
+    // Check if it's a Vercel deployment (for dynamic preview URLs)
+    if (isVercelDeployment(origin)) {
+      console.log(`CORS: Allowing Vercel deployment origin: ${origin}`)
       return callback(null, true)
     }
     
     // Log the rejected origin for debugging
-    console.log(`CORS: Rejected origin: ${origin}`)
-    console.log(`CORS: Allowed origins:`, allowedOrigins)
+    console.log(`CORS: REJECTED origin: ${origin}`)
+    console.log(`CORS: Allowed origins:`, allowedOrigins.slice(0, 5), '...')
     
-    return callback(new Error(`Not allowed by CORS: ${origin}`))
+    return callback(new Error(`CORS policy violation: Origin ${origin} is not allowed`))
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
