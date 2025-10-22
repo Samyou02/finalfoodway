@@ -59,7 +59,7 @@ export const shopAPI = {
   }),
   getAll: () => api.get('/api/shop/get-all'),
   getMy: () => api.get('/api/shop/get-my'),
-  updateStatus: (status) => api.put('/api/shop/update-status', { status }),
+  updateStatus: (isOpen) => api.put('/api/shop/update-status', { isOpen }),
 };
 
 // Item API calls
@@ -73,8 +73,8 @@ export const itemAPI = {
   getById: (itemId) => api.get(`/api/item/get-by-id/${itemId}`),
   getByCity: (city) => api.get(`/api/item/get-by-city/${city}`),
   getByShop: (shopId) => api.get(`/api/item/get-by-shop/${shopId}`),
-  deleteItem: (itemId) => api.get(`/api/item/delete/${itemId}`),
-  updateStock: (itemId, inStock) => api.put(`/api/item/update-stock/${itemId}`, { inStock }),
+  deleteItem: (itemId) => api.delete(`/api/item/delete/${itemId}`),
+  updateStock: (itemId, stockStatus) => api.put(`/api/item/update-stock/${itemId}`, { stockStatus }),
   searchItems: (query, city) => api.get(`/api/item/search-items?query=${query}&city=${city}`),
 };
 
@@ -98,7 +98,7 @@ export const orderAPI = {
 
 // Rating API calls
 export const ratingAPI = {
-  getShopRatings: () => api.get('/api/rating/shop/my'),
+  getMyShopRatings: () => api.get('/api/rating/shop/my'),
   getDeliveryRatings: () => api.get('/api/rating/delivery/my'),
   getOrderRating: (orderId) => api.get(`/api/rating/order/${orderId}`),
   submitRating: (ratingData) => api.post('/api/rating/submit', ratingData),
