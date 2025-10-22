@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base configuration
-export const serverUrl = "http://localhost:8000";
+export const serverUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 // Create axios instance with default configuration
 const api = axios.create({
