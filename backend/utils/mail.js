@@ -93,12 +93,36 @@ const safeSendMail = async (mailOptions) => {
 }
 
 export const sendOtpMail = async (to, otp) => {
-  await safeSendMail({
-    from: process.env.EMAIL || "no-reply@foodway.dev",
-    to,
-    subject: "Reset Your Password",
-    html: `<p>Your OTP for password reset is <b>${otp}</b>. It expires in 5 minutes.</p>`,
-  })
+  console.log(`[MAILER] Attempting to send OTP to: ${to}`)
+  
+  try {
+    const result = await safeSendMail({
+      from: process.env.EMAIL || "no-reply@foodway.dev",
+      to,
+      subject: "Reset Your Password - FOODWAY",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Password Reset Request</h2>
+          <p>You have requested to reset your password for your FOODWAY account.</p>
+          <p>Your OTP for password reset is: <strong style="font-size: 24px; color: #ff6b35; background: #f5f5f5; padding: 10px; border-radius: 5px;">${otp}</strong></p>
+          <p style="color: #666;">This OTP will expire in 5 minutes.</p>
+          <p style="color: #666;">If you didn't request this password reset, please ignore this email.</p>
+        </div>
+      `,
+    })
+    
+    console.log(`[MAILER] OTP email sent successfully to: ${to}`)
+    
+    // Also log OTP in dev for ease of testing when real mail is disabled
+    if (!hasMailerCreds && process.env.USE_TEST_MAIL !== "1") {
+      console.log(`[DEV] Password Reset OTP for ${to}: ${otp}`)
+    }
+    
+    return result
+  } catch (error) {
+    console.error(`[MAILER] Failed to send OTP email to ${to}:`, error)
+    throw error
+  }
 }
 
 export const sendDeliveryOtpMail = async (user, otp) => {

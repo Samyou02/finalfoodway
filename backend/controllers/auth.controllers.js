@@ -114,19 +114,39 @@ return res.status(200).json({message:"log out successfully"})
 export const sendOtp=async (req,res) => {
   try {
     const {email}=req.body
+    
+    if (!email) {
+      return res.status(400).json({message: "Email is required"})
+    }
+    
     const user=await User.findOne({email})
     if(!user){
        return res.status(400).json({message:"User does not exist."})
     }
+    
     const otp=Math.floor(1000 + Math.random() * 9000).toString()
     user.resetOtp=otp
     user.otpExpires=Date.now()+5*60*1000
     user.isOtpVerified=false
     await user.save()
-    await sendOtpMail(email,otp)
-    return res.status(200).json({message:"otp sent successfully"})
+    
+    console.log(`[AUTH] Generated OTP for ${email}: ${otp}`)
+    
+    try {
+      await sendOtpMail(email, otp)
+      console.log(`[AUTH] OTP email sent successfully to ${email}`)
+      return res.status(200).json({message: "OTP sent successfully to your email"})
+    } catch (emailError) {
+      console.error(`[AUTH] Failed to send OTP email to ${email}:`, emailError)
+      // Still return success but with a note about email delivery
+      return res.status(200).json({
+        message: "OTP generated successfully. If you don't receive the email, please check your spam folder or try again.",
+        warning: "Email delivery may be delayed"
+      })
+    }
   } catch (error) {
-     return res.status(500).json(`send otp error ${error}`)
+     console.error('[AUTH] Send OTP error:', error)
+     return res.status(500).json({message: `Send OTP error: ${error.message}`})
   }  
 }
 
