@@ -1,13 +1,19 @@
 {
-  "name": "backend",
+  "name": "foodway-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "FOODWAY Backend API - Food delivery platform",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "clear-db": "node scripts/clearDatabase.js"
+    "build": "echo 'No build step required for Node.js'",
+    "clear-db": "node scripts/clearDatabase.js",
+    "test": "echo 'No tests specified'"
   },
   "author": "Virtual code",
   "license": "ISC",

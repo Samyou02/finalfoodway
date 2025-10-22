@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: foodway-backend
+    env: node
+    region: oregon # or singapore for better performance in Asia
+    plan: starter # free tier, upgrade to standard for production
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    autoDeploy: true
+    rootDir: ./backend
+    healthCheckPath: /
+    
+# Optional: Database service (if you want to use Render's PostgreSQL)
+# databases:
+#   - name: foodway-db
+#     databaseName: foodway
+#     user: foodway_user
+#     region: oregon
+#     plan: starter

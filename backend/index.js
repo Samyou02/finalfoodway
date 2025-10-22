@@ -21,18 +21,20 @@ import { autoRegenerateOtps } from "./controllers/order.controllers.js"
 const app=express()
 const server=http.createServer(app)
 
-// Allow common Vite dev ports and make 5180 explicit
+// CORS Configuration for production and development
 const envAllowed = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean)
-const defaultAllowed = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175",
-  "http://localhost:5180",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-  "http://127.0.0.1:5175",
-  "http://127.0.0.1:5180",
-]
+const defaultAllowed = process.env.NODE_ENV === 'production' 
+  ? [] // In production, only allow explicitly set origins
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://localhost:5180",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+      "http://127.0.0.1:5175",
+      "http://127.0.0.1:5180",
+    ]
 const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowed
 const io=new Server(server,{
    cors:{
@@ -72,6 +74,17 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(cookieParser())
+
+// Health check endpoint for Render
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    message: 'FOODWAY Backend API is running!', 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  })
+})
+
 app.use("/api/auth",authRouter)
 app.use("/api/user",userRouter)
 app.use("/api/superadmin",superadminRouter)
