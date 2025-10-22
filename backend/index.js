@@ -34,6 +34,7 @@ const defaultAllowed = process.env.NODE_ENV === 'production'
       "http://127.0.0.1:5174",
       "http://127.0.0.1:5175",
       "http://127.0.0.1:5180",
+      "https://finalfoodway.vercel.app",
     ]
 const allowedOrigins = envAllowed.length ? envAllowed : defaultAllowed
 const io=new Server(server,{
