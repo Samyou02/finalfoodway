@@ -4,7 +4,7 @@ import { IoIosSearch } from "react-icons/io";
 import { FiShoppingCart } from "react-icons/fi";
 import { useDispatch, useSelector } from 'react-redux';
 import { RxCross2 } from "react-icons/rx";
-import { setSearchItems, setUserData } from '../redux/userSlice';
+import { setSearchItems, logout } from '../redux/userSlice';
 import { userAPI, authAPI, itemAPI } from '../api';
 import { FaPlus } from "react-icons/fa6";
 import { TbReceipt2 } from "react-icons/tb";
@@ -27,7 +27,7 @@ function Nav() {
                 console.log('set-active on logout error:', e)
             }
             await authAPI.signout()
-            dispatch(setUserData(null))
+            dispatch(logout())
             // Note: OTP data is NOT cleared on logout - it persists for 2 hours regardless of login/logout
     } catch (error) {
         console.log(error)
