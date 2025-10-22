@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { tokenManager } from "../api";
 
 // Helper functions for localStorage
 const saveCartToLocalStorage = (cartItems, totalAmount) => {
@@ -80,7 +81,16 @@ const userSlice = createSlice({
   },
   reducers: {
     setUserData: (state, action) => {
-      state.userData = action.payload
+      const userData = action.payload;
+      if (userData && userData.token) {
+        // Store token in localStorage for cross-origin requests
+        tokenManager.setToken(userData.token);
+        // Remove token from user data to avoid storing it in Redux
+        const { token, ...userDataWithoutToken } = userData;
+        state.userData = userDataWithoutToken;
+      } else {
+        state.userData = userData;
+      }
     },
     setCurrentCity: (state, action) => {
       state.currentCity = action.payload
@@ -332,6 +342,9 @@ const userSlice = createSlice({
       localStorage.removeItem('cartItems');
       localStorage.removeItem('totalAmount');
       clearOtpDataFromLocalStorage();
+      
+      // Remove authentication token
+      tokenManager.removeToken();
     }
   }
 })

@@ -3,6 +3,13 @@ import axios from 'axios';
 // Base configuration
 export const serverUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
+// Token management utilities
+export const tokenManager = {
+  getToken: () => localStorage.getItem('authToken'),
+  setToken: (token) => localStorage.setItem('authToken', token),
+  removeToken: () => localStorage.removeItem('authToken'),
+};
+
 // Create axios instance with default configuration
 const api = axios.create({
   baseURL: serverUrl,
@@ -11,6 +18,20 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add request interceptor to include Authorization header
+api.interceptors.request.use(
+  (config) => {
+    const token = tokenManager.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Auth API calls
 export const authAPI = {

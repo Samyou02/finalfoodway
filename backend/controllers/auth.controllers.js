@@ -57,7 +57,10 @@ export const signUp=async (req,res) => {
             httpOnly:true
         })
 
-        return res.status(201).json(user)
+        return res.status(201).json({
+            ...user.toObject(),
+            token: token
+        })
 
     } catch (error) {
         return res.status(500).json(`sign up error ${error}`)
@@ -94,7 +97,10 @@ export const signIn=async (req,res) => {
             httpOnly:true
         })
   
-        return res.status(200).json(user)
+        return res.status(200).json({
+            ...user.toObject(),
+            token: token
+        })
 
     } catch (error) {
         console.error('Sign in error:', error)
@@ -196,7 +202,10 @@ export const googleAuth=async (req,res) => {
                 maxAge:7*24*60*60*1000,
                 httpOnly:true
             })
-            return res.status(200).json(user)
+            return res.status(200).json({
+                ...user.toObject(),
+                token: token
+            })
         }
         
         // Create user data object
@@ -236,7 +245,10 @@ export const googleAuth=async (req,res) => {
             maxAge:7*24*60*60*1000,
             httpOnly:true
         })
-        return res.status(201).json(user)
+        return res.status(201).json({
+            ...user.toObject(),
+            token: token
+        })
 
     } catch (error) {
         return res.status(500).json(`google auth error ${error}`)
